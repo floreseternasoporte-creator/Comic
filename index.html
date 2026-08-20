@@ -952,11 +952,25 @@ html, body{ max-width:100%; overflow-x:hidden; }
 <script>
   (function () {
     var completed = false;
+    var fallbackVisible = false;
     var recovery = document.getElementById('startup-recovery');
     var boot = document.getElementById('boot-screen');
     var message = document.getElementById('startup-recovery-message');
+    var auth = document.getElementById('auth-screen');
+    function revealAuthFallback(text) {
+      if (completed) return;
+      fallbackVisible = true;
+      if (boot) boot.style.display = 'none';
+      if (auth) auth.classList.remove('hidden');
+      var loginError = document.getElementById('login-error');
+      if (loginError && text) loginError.textContent = text;
+    }
     function showRecovery(text) {
       if (completed) return;
+      if (fallbackVisible) {
+        revealAuthFallback('La conexión está tardando. Espera un momento e inténtalo de nuevo.');
+        return;
+      }
       if (boot) boot.style.display = 'none';
       if (message && text) message.textContent = text;
       if (recovery) recovery.style.display = 'flex';
@@ -972,8 +986,8 @@ html, body{ max-width:100%; overflow-x:hidden; }
       showRecovery('No pudimos terminar de cargar InkToon. Vuelve a intentarlo.');
     });
     window.setTimeout(function () {
-      showRecovery('La conexión tardó demasiado. Reintenta para abrir InkToon.');
-    }, 3500);
+      revealAuthFallback();
+    }, 1100);
     window.addEventListener('DOMContentLoaded', function () {
       var retry = document.getElementById('btn-retry-startup');
       if (retry) retry.addEventListener('click', function () { window.location.reload(); });
@@ -1241,80 +1255,45 @@ html, body{ max-width:100%; overflow-x:hidden; }
 
       <!-- ===== VISTA: SUBIR CÓMIC (crear serie) ===== -->
       <section class="view hidden" id="view-upload">
-        <form id="comic-form" class="story-editor">
-          <header class="story-editor-head">
-            <button type="button" class="icon-btn" id="btn-close-story-editor" aria-label="Volver al inicio"><i class="fa-solid fa-chevron-left"></i></button>
-            <h2>Crear historia</h2>
-            <button type="button" class="icon-btn editor-more" id="btn-story-editor-help" aria-label="Información del editor"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-          </header>
-          <p class="story-editor-intro">Completa la ficha de tu historia. Puedes guardar un borrador y continuar más tarde.</p>
-
-          <section class="story-editor-card" aria-label="Datos principales">
-            <div class="story-row">
-              <label class="required" for="comic-title">Título</label>
-              <span class="story-row-control"><input type="text" id="comic-title" placeholder="Título de tu historia" required maxlength="60" /><i class="fa-solid fa-chevron-right chevron" aria-hidden="true"></i></span>
+        <div class="section-head">
+          <h2>Publicar un cómic nuevo</h2>
+          <p>Completa los datos de la historia y añade su portada.</p>
+        </div>
+        <form id="comic-form" class="panel-form">
+          <div class="form-grid">
+            <div class="cover-uploader" id="cover-uploader">
+              <input type="file" id="comic-cover-input" accept="image/*" hidden />
+              <div class="cover-uploader-inner" id="cover-preview-wrap"><i class="fa-regular fa-image"></i><span>Portada</span><small>Relación 2:3 recomendada</small></div>
+              <img id="cover-preview-img" class="hidden" alt="Vista previa de portada" />
             </div>
-            <div class="story-row"><span>Estado</span><span class="story-row-control"><strong class="status-published">Borrador</strong></span></div>
-            <div class="story-row">
-              <label for="comic-story-type">Tipo de historia</label>
-              <span class="story-row-control"><select id="comic-story-type"><option value="cómic">Cómic</option><option value="novela gráfica">Novela gráfica</option><option value="manga">Manga</option><option value="webtoon">Webtoon</option></select></span>
+            <div class="form-fields">
+              <label class="field"><span>Título</span><input type="text" id="comic-title" placeholder="Ej. Sombras de Ébano" required maxlength="60" /></label>
+              <label class="field"><span>Sinopsis</span><textarea id="comic-description" rows="4" placeholder="De qué trata tu historia…" required maxlength="600"></textarea></label>
+              <div class="field-row">
+                <label class="field"><span>Tipo de historia</span><select id="comic-story-type"><option value="cómic">Cómic</option><option value="novela gráfica">Novela gráfica</option><option value="manga">Manga</option><option value="webtoon">Webtoon</option></select></label>
+                <label class="field"><span>Categoría</span><select id="comic-category"><option value="cómics">Cómics</option><option value="novela gráfica">Novela gráfica</option><option value="manga">Manga</option><option value="webtoon">Webtoon</option></select></label>
+              </div>
+              <div class="field-row">
+                <label class="field"><span>Subcategoría</span><select id="comic-genre" required><option value="acción">Acción</option><option value="romance">Romance</option><option value="fantasía">Fantasía</option><option value="terror">Terror</option><option value="comedia">Comedia</option><option value="drama">Drama</option><option value="sci-fi">Sci-Fi</option></select></label>
+                <label class="field"><span>Idioma</span><select id="comic-language"><option value="Español">Español</option><option value="English">English</option><option value="Português">Português</option></select></label>
+              </div>
+              <div class="field-row">
+                <label class="field"><span>Progreso</span><select id="comic-status" required><option value="en curso">En progreso</option><option value="finalizado">Finalizada</option><option value="pausado">En pausa</option></select></label>
+                <label class="field"><span>Frecuencia</span><select id="comic-update-frequency"><option value="semanal">Cada semana</option><option value="quincenal">Cada 15 días</option><option value="mensual">Cada 30 días</option><option value="irregular">Irregular</option></select></label>
+              </div>
+              <label class="field"><span>Coautores <small>(correos separados por coma)</small></span><input type="text" id="comic-coauthors" placeholder="coautor@correo.com" maxlength="240" /></label>
+              <label class="field"><span>Etiquetas <small>(separadas por coma)</small></span><input type="text" id="comic-tags" placeholder="mundo oscuro, magia, venganza" /></label>
+              <p class="form-draft-note" id="comic-draft-status" aria-live="polite">La portada se elige nuevamente al restaurar un borrador.</p>
             </div>
-            <div class="story-row"><span>Estado de verificación</span><span class="story-row-control"><strong class="status-verified">Pendiente</strong></span></div>
-            <div class="story-row">
-              <label for="comic-coauthors">Coautores</label>
-              <span class="story-row-control"><input type="text" id="comic-coauthors" placeholder="Invitar por correo" maxlength="240" /><i class="fa-solid fa-chevron-right chevron" aria-hidden="true"></i></span>
+          </div>
+          <div class="form-actions">
+            <p class="upload-progress hidden" id="comic-upload-progress"><span class="upload-progress-bar" id="comic-upload-progress-bar"></span></p>
+            <p class="form-error" id="comic-form-error"></p>
+            <div class="form-actions-row">
+              <button type="button" class="btn btn-outline" id="btn-save-comic-draft"><i class="fa-regular fa-floppy-disk"></i> Guardar borrador</button>
+              <button type="submit" class="btn btn-primary" id="comic-submit-btn">Publicar cómic</button>
             </div>
-          </section>
-
-          <section class="story-editor-section" aria-labelledby="story-info-title">
-            <h3 id="story-info-title">Información de la historia</h3>
-            <div class="story-editor-card">
-              <div class="story-row">
-                <label class="required" for="comic-category">Categoría</label>
-                <span class="story-row-control"><select id="comic-category"><option value="cómics">Cómics</option><option value="novela gráfica">Novela gráfica</option><option value="manga">Manga</option><option value="webtoon">Webtoon</option></select></span>
-              </div>
-              <div class="story-row">
-                <label class="required" for="comic-genre">Subcategoría</label>
-                <span class="story-row-control"><select id="comic-genre" required><option value="acción">Acción</option><option value="romance">Romance</option><option value="fantasía">Fantasía</option><option value="terror">Terror</option><option value="comedia">Comedia</option><option value="drama">Drama</option><option value="sci-fi">Sci-Fi</option></select></span>
-              </div>
-              <div class="story-row">
-                <label class="required" for="comic-language">Idioma</label>
-                <span class="story-row-control"><select id="comic-language"><option value="Español">Español</option><option value="English">English</option><option value="Português">Português</option></select></span>
-              </div>
-              <div class="story-row">
-                <label class="required" for="comic-status">Progreso de la historia</label>
-                <span class="story-row-control"><select id="comic-status" required><option value="en curso">En progreso</option><option value="finalizado">Finalizada</option><option value="pausado">En pausa</option></select></span>
-              </div>
-              <div class="story-row">
-                <label class="required" for="comic-update-frequency">Frecuencia de actualización</label>
-                <span class="story-row-control"><select id="comic-update-frequency"><option value="semanal">Cada semana</option><option value="quincenal">Cada 15 días</option><option value="mensual">Cada 30 días</option><option value="irregular">Irregular</option></select></span>
-              </div>
-            </div>
-          </section>
-
-          <section class="story-editor-section" aria-labelledby="story-detail-title">
-            <h3 id="story-detail-title">Detalles y portada</h3>
-            <div class="story-editor-card">
-              <label class="story-textarea" for="comic-description"><span class="required">Sinopsis</span><textarea id="comic-description" placeholder="Cuéntale a los lectores de qué trata tu historia…" required maxlength="600"></textarea></label>
-              <div class="story-cover-row">
-                <div class="cover-uploader" id="cover-uploader">
-                  <input type="file" id="comic-cover-input" accept="image/*" hidden />
-                  <div class="cover-uploader-inner" id="cover-preview-wrap"><i class="fa-regular fa-image"></i><span>Portada</span><small>2:3</small></div>
-                  <img id="cover-preview-img" class="hidden" alt="Vista previa de portada" />
-                </div>
-                <div class="story-cover-copy"><h4>Portada de la historia</h4><p>Elige una imagen vertical. Es la primera impresión de tu serie.</p></div>
-              </div>
-              <div class="story-row"><label for="comic-tags">Etiquetas</label><span class="story-row-control"><input type="text" id="comic-tags" placeholder="magia, drama…" /></span></div>
-            </div>
-          </section>
-
-          <p class="upload-progress hidden" id="comic-upload-progress"><span class="upload-progress-bar" id="comic-upload-progress-bar"></span></p>
-          <p class="form-error" id="comic-form-error"></p>
-          <p class="form-draft-note" id="comic-draft-status" aria-live="polite">Los cambios se guardan como borrador en este dispositivo.</p>
-          <footer class="story-editor-actions">
-            <button type="button" class="btn btn-outline" id="btn-save-comic-draft"><i class="fa-regular fa-floppy-disk"></i> Borrador</button>
-            <button type="submit" class="btn btn-primary" id="comic-submit-btn">Publicar</button>
-          </footer>
+          </div>
         </form>
       </section>
 
@@ -2432,8 +2411,8 @@ $("#comic-form").addEventListener("change", () => {
   clearTimeout(draftSaveTimer);
   draftSaveTimer = setTimeout(() => saveComicDraft(false), 150);
 });
-$("#btn-close-story-editor").addEventListener("click", () => goToView("feed"));
-$("#btn-story-editor-help").addEventListener("click", () => {
+$("#btn-close-story-editor")?.addEventListener("click", () => goToView("feed"));
+$("#btn-story-editor-help")?.addEventListener("click", () => {
   toast("Completa los datos principales, guarda un borrador y publica cuando tengas portada y sinopsis.", "info");
 });
 
