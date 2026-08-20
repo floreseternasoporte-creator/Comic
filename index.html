@@ -1514,22 +1514,14 @@ html, body{ max-width:100%; overflow-x:hidden; }
 // InkToon — Configuración de Firebase
 // =========================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import {
-  getAuth,
-  setPersistence,
-  browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 const firebaseConfig = {
   // La configuración web pública de Firebase se mantiene en este archivo por decisión del proyecto.
   apiKey: "AIzaSyC9v2qp6zGtmvsFiOknlmTHnN6zZY1RLcI",
   authDomain: "ggggg-f2508.firebaseapp.com",
-  databaseURL: "https://ggggg-f2508-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "ggggg-f2508",
-  storageBucket: "ggggg-f2508.firebasestorage.app",
   messagingSenderId: "120837533638",
   appId: "1:120837533638:web:6720ebd1367f3acf9f4cc7",
   measurementId: "G-E2JX3ZGG5K"
@@ -1538,8 +1530,6 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
-const storage = getStorage(firebaseApp);
-const rtdb = getDatabase(firebaseApp);
 
 // =========================================================
 // InkToon — Lógica de la aplicación
@@ -1554,13 +1544,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc,
-  collection, addDoc, query, where, orderBy, limit,
+  collection, addDoc, query, where, orderBy, limit, startAfter,
   onSnapshot, serverTimestamp, increment, arrayUnion, arrayRemove,
   getDocs, deleteField
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-import {
-  ref, uploadBytes, getDownloadURL, deleteObject
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 import {
   createLocalProfile,
   friendlyAuthError,
@@ -1590,6 +1577,7 @@ const state = {
   activeComic: null,      // cómic abierto en detalle
   activeChapters: [],
   activeChapterIndex: 0,
+  readerPageObserver: null,
   activeGenreFilter: "todos",
   pendingCoverFile: null,
   pendingPageFiles: [],
@@ -2795,10 +2783,6 @@ $("#btn-delete-comic").addEventListener("click", async () => {
     const chaptersSnap = await getDocs(query(collection(db, "chapters"), where("comicId", "==", comic.id)));
     await Promise.all(chaptersSnap.docs.map(d => deleteDoc(doc(db, "chapters", d.id))));
 
-    if (comic.coverPath) {
-      try { await deleteObject(ref(storage, comic.coverPath)); } catch (e) { /* puede que ya no exista */ }
-    }
-
     await deleteDoc(doc(db, "comics", comic.id));
     await updateDoc(doc(db, "users", state.user.uid), { comicsCount: increment(-1) });
     state.profile.comicsCount = Math.max(0, (state.profile.comicsCount || 1) - 1);
@@ -2869,8 +2853,9 @@ function renderChapterRow(ch, comic){
       const confirmed = confirm(`¿Eliminar el capítulo ${ch.number}?`);
       if (!confirmed) return;
       try {
-        if (ch.pagePaths && ch.pagePaths.length) {
-          await Promise.all(ch.pagePaths.map(p => deleteObject(ref(storage, p)).catch(() => {})));
+        if (ch.pageStorage === "base64") {
+          const pagesSnap = await getDocs(collection(db, "chapters", ch.id, "pages"));
+          await Promise.all(pagesSnap.docs.map(page => deleteDoc(page.ref)));
         }
         await deleteDoc(doc(db, "chapters", ch.id));
         await updateDoc(doc(db, "comics", comic.id), { chaptersCount: increment(-1) });
@@ -3180,11 +3165,45 @@ $("#chapter-form").addEventListener("submit", async (e) => {
 /* ---------------------------------------------------------
    LECTOR — scroll vertical continuo (elemento distintivo)
 --------------------------------------------------------- */
-async function getChapterPageSources(chapter){
-  if (Array.isArray(chapter.pages)) return chapter.pages;
-  if (chapter.pageStorage !== "base64") return [];
-  const snapshot = await getDocs(query(collection(db, "chapters", chapter.id, "pages"), orderBy("index", "asc")));
-  return snapshot.docs.map(item => item.data().image).filter(Boolean);
+function appendReaderImage(pagesWrap, source, index){
+  const img = document.createElement("img");
+  img.loading = index < 2 ? "eager" : "lazy";
+  img.alt = `Página ${index + 1}`;
+  img.src = source;
+  pagesWrap.appendChild(img);
+}
+
+async function appendBase64PageBatch(chapter, pagesWrap, loader){
+  if (loader.loading || loader.done) return 0;
+  loader.loading = true;
+  try {
+    const clauses = [orderBy("index", "asc")];
+    if (loader.cursor) clauses.push(startAfter(loader.cursor));
+    clauses.push(limit(2));
+    const snapshot = await getDocs(query(collection(db, "chapters", chapter.id, "pages"), ...clauses));
+    if (state.activeChapters[state.activeChapterIndex]?.id !== chapter.id) return 0;
+    snapshot.docs.forEach((item, offset) => appendReaderImage(pagesWrap, item.data().image, loader.loaded + offset));
+    loader.loaded += snapshot.size;
+    loader.cursor = snapshot.docs[snapshot.docs.length - 1] || loader.cursor;
+    loader.done = snapshot.size < 2 || loader.loaded >= Number(chapter.pageCount || Infinity);
+    return snapshot.size;
+  } finally {
+    loader.loading = false;
+  }
+}
+
+function prepareProgressRestoration(chapter, comic, pagesWrap){
+  const savedProgress = getSavedReadingProgress(comic.id);
+  if (savedProgress?.chapterId !== chapter.id || savedProgress.percent <= 0) return;
+  const scrollEl = $("#reader-scroll");
+  const restoreProgress = () => {
+    const scrollable = scrollEl.scrollHeight - scrollEl.clientHeight;
+    if (scrollable <= 0) return;
+    scrollEl.scrollTop = (savedProgress.percent / 100) * scrollable;
+    $("#reader-progress-fill").style.width = `${savedProgress.percent}%`;
+  };
+  const images = Array.from(pagesWrap.querySelectorAll("img"));
+  Promise.all(images.map(image => image.decode ? image.decode().catch(() => {}) : Promise.resolve())).then(() => requestAnimationFrame(restoreProgress));
 }
 
 async function openReader(index){
@@ -3198,27 +3217,38 @@ async function openReader(index){
   $("#reader-chapter-title").textContent = `Cap. ${chapter.number} — ${chapter.title}`;
 
   const pagesWrap = $("#reader-pages");
+  state.readerPageObserver?.disconnect();
   pagesWrap.innerHTML = `<div class="feed-empty">Cargando páginas…</div>`;
-  let pages;
   try {
-    pages = await getChapterPageSources(chapter);
+    pagesWrap.innerHTML = "";
+    if (Array.isArray(chapter.pages)) {
+      chapter.pages.forEach((source, pageIndex) => appendReaderImage(pagesWrap, source, pageIndex));
+    } else if (chapter.pageStorage === "base64") {
+      const loader = { cursor: null, loaded: 0, loading: false, done: false };
+      const loaded = await appendBase64PageBatch(chapter, pagesWrap, loader);
+      if (!loaded) throw new Error("Este capítulo aún no tiene páginas disponibles.");
+      const sentinel = document.createElement("div");
+      sentinel.className = "reader-page-sentinel";
+      pagesWrap.appendChild(sentinel);
+      state.readerPageObserver = new IntersectionObserver(async entries => {
+        if (!entries[0]?.isIntersecting || loader.loading || loader.done) return;
+        const batchSize = await appendBase64PageBatch(chapter, pagesWrap, loader);
+        if (!batchSize || loader.done) {
+          state.readerPageObserver?.disconnect();
+          sentinel.remove();
+        } else {
+          pagesWrap.appendChild(sentinel);
+        }
+      }, { root: $("#reader-scroll"), rootMargin: "1200px 0px" });
+      state.readerPageObserver.observe(sentinel);
+    } else {
+      throw new Error("Este capítulo aún no tiene páginas disponibles.");
+    }
   } catch (error) {
-    pagesWrap.innerHTML = `<div class="feed-empty">No se pudieron cargar las páginas de este capítulo.</div>`;
+    pagesWrap.innerHTML = `<div class="feed-empty">${escapeHTML(error instanceof Error ? error.message : "No se pudieron cargar las páginas de este capítulo.")}</div>`;
     return;
   }
   if (state.activeChapters[state.activeChapterIndex]?.id !== chapter.id) return;
-  if (!pages.length) {
-    pagesWrap.innerHTML = `<div class="feed-empty">Este capítulo aún no tiene páginas disponibles.</div>`;
-    return;
-  }
-  pagesWrap.innerHTML = "";
-  pages.forEach((url, i) => {
-    const img = document.createElement("img");
-    img.loading = i < 2 ? "eager" : "lazy";
-    img.alt = `Página ${i + 1}`;
-    img.src = url;
-    pagesWrap.appendChild(img);
-  });
 
   const likeBtn = $("#btn-reader-like");
   const liked = (chapter.likedBy || []).includes(state.user.uid);
@@ -3234,18 +3264,7 @@ async function openReader(index){
   scrollEl.scrollTop = 0;
   $("#reader-progress-fill").style.width = "0%";
 
-  const savedProgress = getSavedReadingProgress(comic.id);
-  if (savedProgress?.chapterId === chapter.id && savedProgress.percent > 0) {
-    const restoreProgress = () => {
-      const scrollable = scrollEl.scrollHeight - scrollEl.clientHeight;
-      if (scrollable <= 0) return;
-      scrollEl.scrollTop = (savedProgress.percent / 100) * scrollable;
-      $("#reader-progress-fill").style.width = `${savedProgress.percent}%`;
-    };
-    const images = Array.from(pagesWrap.querySelectorAll("img"));
-    const ready = images.map(image => image.decode ? image.decode().catch(() => {}) : Promise.resolve());
-    Promise.all(ready).then(() => requestAnimationFrame(restoreProgress));
-  }
+  prepareProgressRestoration(chapter, comic, pagesWrap);
 
   loadCommentsFor(chapter.id);
 }
