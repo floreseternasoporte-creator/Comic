@@ -973,7 +973,7 @@ html, body{ max-width:100%; overflow-x:hidden; }
     });
     window.setTimeout(function () {
       showRecovery('La conexión tardó demasiado. Reintenta para abrir InkToon.');
-    }, 9000);
+    }, 3500);
     window.addEventListener('DOMContentLoaded', function () {
       var retry = document.getElementById('btn-retry-startup');
       if (retry) retry.addEventListener('click', function () { window.location.reload(); });
@@ -1878,14 +1878,12 @@ $("#register-form").addEventListener("submit", async (e) => {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const avatar = avatarFor(username);
-    try {
-      await updateProfile(cred.user, { displayName: username, photoURL: avatar });
-    } catch (profileUpdateError) {
-      console.warn("[Auth] La cuenta se creó, pero no se pudo actualizar el nombre visible", profileUpdateError);
-    }
     const localProfile = createLocalProfile({ ...cred.user, photoURL: avatar }, username);
     state.registrationInProgress = false;
     activateAuthenticatedUI(cred.user, localProfile);
+    void updateProfile(cred.user, { displayName: username, photoURL: avatar }).catch(profileUpdateError => {
+      console.warn("[Auth] La cuenta se creó, pero no se pudo actualizar el nombre visible", profileUpdateError);
+    });
     void persistProfileWithoutBlocking(cred.user, localProfile);
     toast("Cuenta creada. ¡Bienvenido a InkToon!", "success");
   } catch (err) {
@@ -1930,6 +1928,24 @@ $("#btn-logout").addEventListener("click", async () => {
 /* ---------------------------------------------------------
    Observador de sesión — arranca la app
 --------------------------------------------------------- */
+async function refreshProfileInBackground(user, localProfile){
+  try {
+    const profileSnap = await getDoc(doc(db, "users", user.uid));
+    if (profileSnap.exists()) {
+      Object.assign(localProfile, profileSnap.data());
+      if (state.user?.uid === user.uid) {
+        state.profile = localProfile;
+        state.savedComicIds = localProfile.savedComics || [];
+        applyProfileToChrome();
+      }
+    } else {
+      void persistProfileWithoutBlocking(user, localProfile);
+    }
+  } catch (profileError) {
+    console.warn("[Auth] No se pudo leer el perfil remoto; se mantiene el perfil local", profileError);
+  }
+}
+
 async function hydrateAuthenticatedUser(user){
   if (state.sessionHydrationInProgress) return;
   state.sessionHydrationInProgress = true;
@@ -1940,21 +1956,9 @@ async function hydrateAuthenticatedUser(user){
   state.unsubscribers = [];
 
   try {
-    state.user = user;
-    const profileRef = doc(db, "users", user.uid);
     const localProfile = createLocalProfile(user);
-    try {
-      const profileSnap = await getDoc(profileRef);
-      if (profileSnap.exists()) {
-        Object.assign(localProfile, profileSnap.data());
-      } else {
-        void persistProfileWithoutBlocking(user, localProfile);
-      }
-    } catch (profileError) {
-      console.warn("[Auth] No se pudo leer el perfil remoto; se usará el perfil local", profileError);
-    }
-
     activateAuthenticatedUI(user, localProfile);
+    void refreshProfileInBackground(user, localProfile);
   } catch (err) {
     console.error("[Auth] No se pudo restaurar la sesión", err);
     state.user = null;
@@ -1969,7 +1973,10 @@ async function hydrateAuthenticatedUser(user){
 
 async function startSessionObserver(){
   try {
-    await setPersistence(auth, browserLocalPersistence);
+    await Promise.race([
+      setPersistence(auth, browserLocalPersistence),
+      new Promise(resolve => setTimeout(resolve, 800))
+    ]);
   } catch (err) {
     console.warn("[Auth] No se pudo habilitar la persistencia local", err);
   }
