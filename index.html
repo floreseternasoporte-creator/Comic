@@ -110,13 +110,17 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   0%,100%{ transform: rotate(45deg) scale(1); }
   50%{ transform: rotate(45deg) scale(0.82); }
 }
-.boot-mark h1{
-  font-family: var(--font-display);
-  font-size: 28px;
-  letter-spacing: 0.5px;
-}
+.boot-mark h1{ font-family: var(--font-display); font-size: 28px; letter-spacing: 0.5px; }
 .boot-mark h1 em{ font-style:normal; color: var(--ink); }
 .boot-sub{ color: var(--text-faint); font-size: 13px; font-family: var(--font-mono); }
+
+.brand-mini, .side-brand, .auth-intro-brand, .auth-brand h1{ display:flex; align-items:center; gap:8px; }
+.brand-doodle{ position:relative; display:inline-block; width:19px; height:19px; flex:0 0 19px; transform:rotate(-18deg); }
+.brand-doodle::before{ content:""; position:absolute; inset:1px 2px 4px 1px; border:2px solid var(--ink); border-left-color:transparent; border-radius:5px 7px 5px 7px; transform:scale(.45) rotate(-20deg); opacity:0; animation:ink-doodle-draw 2.9s cubic-bezier(.23,1,.32,1) infinite; }
+.brand-doodle::after{ content:""; position:absolute; width:7px; height:7px; right:0; bottom:0; background:var(--red); clip-path:polygon(50% 0, 100% 100%, 0 100%); opacity:0; animation:ink-doodle-tip 2.9s cubic-bezier(.23,1,.32,1) infinite; }
+.brand-doodle--small{ width:16px; height:16px; flex-basis:16px; }
+@keyframes ink-doodle-draw{ 0%,15%{ transform:scale(.45) rotate(-20deg); opacity:0; } 34%,76%{ transform:scale(1) rotate(0); opacity:1; } 88%,100%{ transform:scale(.9) rotate(4deg); opacity:.45; } }
+@keyframes ink-doodle-tip{ 0%,30%{ transform:translate(-5px,-5px) scale(.2); opacity:0; } 42%,78%{ transform:translate(0,0) scale(1); opacity:1; } 100%{ transform:translate(2px,2px) scale(.7); opacity:0; } }
 
 /* =========================================================
    AUTENTICACIÓN — pantalla de aplicación, no modal
@@ -292,6 +296,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   display:flex; align-items:center; gap: 10px;
 }
 .mobile-search .topbar-search{ max-width:none; }
+
+.search-screen{ display:flex; flex-direction:column; gap:18px; }
+.search-input-shell{
+  display:flex; align-items:center; gap:10px; padding: 11px 13px;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m);
+  color:var(--text-faint);
+}
+.search-input-shell:focus-within{ border-color:var(--ink); }
+.search-input-shell input{ flex:1; min-width:0; border:none; outline:none; background:transparent; color:var(--text); font-size:15px; }
+.search-input-shell input::placeholder{ color:var(--text-faint); }
+.search-clear{ padding:4px 6px; font-size:12px; }
+.search-meta{ display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--text-faint); font-size:12.5px; }
+.search-filter-row{ display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
+.search-filter-row::-webkit-scrollbar{ display:none; }
+.search-filter-row .chip{ flex:0 0 auto; }
 
 .layout{ display:flex; }
 
@@ -515,6 +534,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   border: 1px solid var(--border);
 }
 .pages-preview-list img{ width:100%; height:100%; object-fit:cover; }
+.pages-preview-list img.page-preview-rotated{ transform:rotate(var(--page-rotation)); }
 .pages-preview-list .page-num{
   position:absolute; top:4px; left:4px; background: rgba(0,0,0,0.7); color:#fff;
   font-family: var(--font-mono); font-size: 10px; padding: 1px 6px; border-radius: 4px;
@@ -525,6 +545,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   display:flex; align-items:center; justify-content:center;
 }
 .pages-preview-list .page-remove:hover{ background: var(--red); }
+.page-editor-actions{ position:absolute; left:4px; right:4px; bottom:4px; display:grid; grid-template-columns:repeat(4, 1fr); gap:3px; }
+.page-editor-actions button{ min-width:0; height:25px; border:1px solid rgba(255,255,255,.22); background:rgba(0,0,0,.74); color:#fff; border-radius:4px; font-size:10px; display:flex; align-items:center; justify-content:center; }
+.page-editor-actions button:disabled{ opacity:.35; }
+.page-editor-actions button:hover:not(:disabled){ background:var(--ink); }
+.page-editor-mode{ position:absolute; top:4px; right:4px; background:rgba(0,0,0,.72); color:#fff; font:9px var(--font-mono); padding:2px 5px; border-radius:3px; }
+.page-editor-note{ font-size:11.5px; color:var(--text-faint); line-height:1.5; padding:2px 2px 0; }
+.publish-steps{ list-style:none; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:4px; }
+.publish-steps li{ min-width:0; padding:9px 8px; border:1px solid var(--border); border-radius:var(--radius-s); color:var(--text-faint); font-size:11px; line-height:1.25; }
+.publish-steps b{ display:block; color:var(--ink); font:10px var(--font-mono); margin-bottom:3px; }
 
 /* =========================================================
    PERFIL
@@ -755,11 +784,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .comic-grid{ gap:4px; }
 }
 
-@media (max-width: 859px){
+@media (max-width:859px){
   .topbar{ padding: 0 12px; gap: 10px; }
   .topbar-search{ display:none; }
   .brand-mini{ display:block; margin-right:auto; }
   .content{ padding: 16px 12px calc(var(--bottom-nav-h) + 26px); }
+  .search-screen{ gap:14px; }
+  .search-input-shell{ position:sticky; top:10px; z-index:10; }
   .comic-detail-hero{ flex-direction:column; }
   .comic-detail-cover{ width: 120px; }
   .form-grid{ flex-direction:column; }
@@ -776,11 +807,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .auth-form[role="tabpanel"]{ min-height:0; }
 }
 
-@media (max-width: 480px){
+@media (max-width:480px){
   .auth-workspace{ padding:24px 16px; }
   .auth-brand h1{ font-size:28px; }
   .fullscreen-view-head{ margin-bottom:18px; }
   .comic-detail-actions .btn span{ display:none; }
+  .publish-steps li{ padding:8px 6px; font-size:10px; }
 }
 
 </style>
@@ -799,7 +831,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 <!-- ======================= ACCESO Y REGISTRO — PANTALLA COMPLETA ======================= -->
 <section id="auth-screen" class="auth-screen hidden" aria-label="Acceso a InkToon">
   <aside class="auth-intro" aria-hidden="true">
-    <div class="auth-intro-brand">INK<em>TOON</em></div>
+    <div class="auth-intro-brand"><span class="brand-doodle" aria-hidden="true"></span>INK<em>TOON</em></div>
     <div class="auth-intro-copy">
       <h2>Tu próxima historia empieza aquí.</h2>
       <p>Lee, sigue y publica cómics desde una experiencia pensada como aplicación, no como una ventana emergente.</p>
@@ -810,7 +842,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   <div class="auth-workspace">
     <div class="auth-panel">
       <div class="auth-brand">
-        <h1>INK<em>TOON</em></h1>
+        <h1><span class="brand-doodle" aria-hidden="true"></span>INK<em>TOON</em></h1>
         <p>Accede a tu biblioteca o crea tu perfil de creador.</p>
       </div>
 
@@ -863,7 +895,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     <button class="icon-btn only-mobile" id="btn-open-search" aria-label="Buscar">
       <i class="fa-solid fa-magnifying-glass"></i>
     </button>
-    <div class="brand-mini">INK<em>TOON</em></div>
+    <div class="brand-mini"><span class="brand-doodle brand-doodle--small" aria-hidden="true"></span>INK<em>TOON</em></div>
 
     <div class="topbar-search">
       <i class="fa-solid fa-magnifying-glass"></i>
@@ -898,7 +930,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
     <!-- Sidebar estilo IG -->
     <nav class="sidebar">
-      <div class="side-brand">INK<em>TOON</em></div>
+      <div class="side-brand"><span class="brand-doodle" aria-hidden="true"></span>INK<em>TOON</em></div>
       <ul class="side-nav">
         <li><button class="side-link active" data-view="feed"><i class="fa-solid fa-house"></i><span>Inicio</span></button></li>
         <li><button class="side-link" data-view="explore"><i class="fa-solid fa-compass"></i><span>Explorar</span></button></li>
@@ -952,6 +984,33 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
         </div>
       </section>
 
+      <!-- ===== VISTA: BÚSQUEDA ===== -->
+      <section class="view hidden" id="view-search">
+        <div class="search-screen">
+          <div class="section-head">
+            <h2>Buscar</h2>
+            <p>Encuentra series, géneros y creadores.</p>
+          </div>
+          <div class="search-input-shell">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="search-screen-input" autocomplete="off" placeholder="Título, género o autor…" aria-label="Buscar cómics" />
+            <button type="button" class="btn-text search-clear hidden" id="btn-clear-search">Limpiar</button>
+          </div>
+          <div class="search-filter-row" id="search-filter-row" aria-label="Filtrar búsqueda">
+            <button class="chip active" data-search-genre="todos">Todo</button>
+            <button class="chip" data-search-genre="acción">Acción</button>
+            <button class="chip" data-search-genre="romance">Romance</button>
+            <button class="chip" data-search-genre="fantasía">Fantasía</button>
+            <button class="chip" data-search-genre="terror">Terror</button>
+            <button class="chip" data-search-genre="comedia">Comedia</button>
+            <button class="chip" data-search-genre="drama">Drama</button>
+            <button class="chip" data-search-genre="sci-fi">Sci-Fi</button>
+          </div>
+          <div class="search-meta"><span id="search-results-status">Escribe para empezar a buscar.</span></div>
+          <div class="comic-grid comic-grid-explore" id="search-results-grid"></div>
+        </div>
+      </section>
+
       <!-- ===== VISTA: MI BIBLIOTECA ===== -->
       <section class="view hidden" id="view-library">
         <div class="section-head">
@@ -990,6 +1049,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
         </div>
 
         <form id="comic-form" class="panel-form">
+          <ol class="publish-steps" aria-label="Pasos para publicar">
+            <li><b>01</b>Diseña la ficha</li>
+            <li><b>02</b>Publica la serie</li>
+            <li><b>03</b>Añade capítulos</li>
+          </ol>
           <div class="form-grid">
             <div class="cover-uploader" id="cover-uploader">
               <input type="file" id="comic-cover-input" accept="image/*" hidden />
@@ -1169,6 +1233,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
             </div>
             <ul class="pages-preview-list" id="pages-preview-list"></ul>
           </div>
+          <p class="page-editor-note"><i class="fa-solid fa-wand-magic-sparkles"></i> Editor móvil: ordena, gira y alterna el recorte entre original, vertical 2:3 y cuadrado antes de publicar.</p>
 
           <div class="form-actions">
             <p class="upload-progress hidden" id="chapter-upload-progress">
@@ -1450,7 +1515,7 @@ function toast(message, type = "info"){
 /* ---------------------------------------------------------
    Navegación entre vistas
 --------------------------------------------------------- */
-const VIEW_IDS = ["feed", "explore", "library", "activity", "upload", "profile", "edit-profile", "comic-detail", "upload-chapter", "reader"];
+const VIEW_IDS = ["feed", "explore", "search", "library", "activity", "upload", "profile", "edit-profile", "comic-detail", "upload-chapter", "reader"];
 
 function goToView(name, opts = {}){
   VIEW_IDS.forEach(v => {
@@ -1469,6 +1534,7 @@ function goToView(name, opts = {}){
 
   if (name === "feed") loadFeed();
   if (name === "explore") loadExplore();
+  if (name === "search") loadSearchScreen();
   if (name === "library") loadLibrary();
   if (name === "activity") loadActivity();
   if (name === "profile" && !opts.skipProfileReload) loadProfile();
@@ -1485,12 +1551,17 @@ $("#btn-profile-nav").addEventListener("click", () => goToView("profile"));
 $("#btn-notifications").addEventListener("click", () => goToView("activity"));
 $("#btn-empty-upload")?.addEventListener("click", () => goToView("upload"));
 
-/* Búsqueda móvil */
-$("#btn-open-search").addEventListener("click", () => {
-  show($("#mobile-search"));
-  $("#search-input-mobile").focus();
-});
-$("#btn-close-search").addEventListener("click", () => hide($("#mobile-search")));
+/* Búsqueda independiente */
+function openSearch(query = ""){
+  goToView("search");
+  const input = $("#search-screen-input");
+  input.value = query.trim();
+  syncSearchInputs(input.value);
+  setTimeout(() => input.focus(), 0);
+}
+
+$("#btn-open-search").addEventListener("click", () => openSearch());
+$("#btn-close-search").addEventListener("click", () => goToView("feed"));
 
 /* ---------------------------------------------------------
    AUTENTICACIÓN
@@ -1829,29 +1900,65 @@ $$(".chip[data-genre]").forEach(chip => {
 
 /* Búsqueda (desktop + móvil) */
 let searchDebounce;
+let activeSearchGenre = "todos";
+let lastSearchTerm = "";
+
+function syncSearchInputs(value){
+  $("#search-input").value = value;
+  $("#search-input-mobile").value = value;
+  $("#btn-clear-search").classList.toggle("hidden", !value.trim());
+}
+
+async function runSearch(value = lastSearchTerm){
+  const term = value.trim().toLowerCase();
+  lastSearchTerm = value;
+  syncSearchInputs(value);
+  const gridEl = $("#search-results-grid");
+  const statusEl = $("#search-results-status");
+  gridEl.innerHTML = `<div class="feed-empty" style="grid-column:1/-1;">Buscando…</div>`;
+
+  try {
+    const snap = await getDocs(query(collection(db, "comics"), orderBy("createdAt", "desc"), limit(80)));
+    const filtered = snap.docs.filter(d => {
+      const data = d.data();
+      const haystack = `${data.title || ""} ${data.description || ""} ${(data.tags || []).join(" ")} ${data.authorName || ""}`.toLowerCase();
+      const matchesTerm = !term || haystack.includes(term);
+      const matchesGenre = activeSearchGenre === "todos" || data.genre === activeSearchGenre;
+      return matchesTerm && matchesGenre;
+    });
+    statusEl.textContent = filtered.length ? `${filtered.length} resultado${filtered.length === 1 ? "" : "s"}` : "No encontramos resultados.";
+    renderComicGrid(gridEl, filtered);
+  } catch (err) {
+    statusEl.textContent = "No se pudo realizar la búsqueda.";
+    gridEl.innerHTML = `<div class="feed-empty" style="grid-column:1/-1;">Revisa tu conexión e inténtalo de nuevo.</div>`;
+  }
+}
+
+function loadSearchScreen(){
+  if (!$("#search-results-grid").children.length) runSearch(lastSearchTerm);
+}
+
 function handleSearchInput(value){
   clearTimeout(searchDebounce);
-  const term = value.trim().toLowerCase();
-  searchDebounce = setTimeout(async () => {
-    if (!term) { goToView("explore"); return; }
-    goToView("explore");
-    const gridEl = $("#explore-comic-grid");
-    gridEl.innerHTML = `<div class="feed-empty" style="grid-column:1/-1;">Buscando "${escapeHTML(value)}"…</div>`;
-    try {
-      const snap = await getDocs(query(collection(db, "comics"), orderBy("createdAt", "desc"), limit(60)));
-      const filtered = snap.docs.filter(d => {
-        const data = d.data();
-        const haystack = `${data.title || ""} ${data.description || ""} ${(data.tags || []).join(" ")} ${data.authorName || ""}`.toLowerCase();
-        return haystack.includes(term);
-      });
-      renderComicGrid(gridEl, filtered);
-    } catch (err) {
-      gridEl.innerHTML = `<div class="feed-empty" style="grid-column:1/-1;">No se pudo buscar.</div>`;
-    }
-  }, 400);
+  lastSearchTerm = value;
+  searchDebounce = setTimeout(() => runSearch(value), 280);
 }
-$("#search-input").addEventListener("input", (e) => handleSearchInput(e.target.value));
-$("#search-input-mobile").addEventListener("input", (e) => handleSearchInput(e.target.value));
+
+$("#search-input").addEventListener("input", (e) => openSearch(e.target.value));
+$("#search-input-mobile").addEventListener("input", (e) => openSearch(e.target.value));
+$("#search-screen-input").addEventListener("input", (e) => handleSearchInput(e.target.value));
+$("#btn-clear-search").addEventListener("click", () => {
+  $("#search-screen-input").value = "";
+  handleSearchInput("");
+  $("#search-screen-input").focus();
+});
+$$("[data-search-genre]").forEach(button => {
+  button.addEventListener("click", () => {
+    activeSearchGenre = button.dataset.searchGenre;
+    $$("[data-search-genre]").forEach(chip => chip.classList.toggle("active", chip === button));
+    runSearch(lastSearchTerm);
+  });
+});
 
 /* ---------------------------------------------------------
    BIBLIOTECA (guardados)
@@ -2427,7 +2534,7 @@ $("#btn-add-chapter").addEventListener("click", () => {
   $("#chapter-number").value = nextNumber;
   $("#chapter-title").value = "";
   $("#chapter-notes").value = "";
-  state.pendingPageFiles = [];
+  clearPageEditor();
   renderPagesPreview();
   $("#chapter-form-error").textContent = "";
   goToView("upload-chapter");
@@ -2469,27 +2576,86 @@ pagesUploader.addEventListener("drop", (e) => {
 function addPageFiles(files){
   const images = files.filter(f => f.type.startsWith("image/"));
   if (!images.length) return;
-  state.pendingPageFiles = [...state.pendingPageFiles, ...images];
+  state.pendingPageFiles = [...state.pendingPageFiles, ...images.map(file => ({
+    file,
+    rotation: 0,
+    crop: "original",
+    previewUrl: URL.createObjectURL(file)
+  }))];
+  renderPagesPreview();
+}
+
+function clearPageEditor(){
+  state.pendingPageFiles.forEach(item => {
+    if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+  });
+  state.pendingPageFiles = [];
+}
+
+function getCropLabel(mode){
+  return mode === "portrait" ? "2:3" : mode === "square" ? "1:1" : "ORIG";
+}
+
+function updatePageEditorItem(index, changes){
+  const current = state.pendingPageFiles[index];
+  if (!current) return;
+  state.pendingPageFiles[index] = { ...current, ...changes };
   renderPagesPreview();
 }
 
 function renderPagesPreview(){
   const listEl = $("#pages-preview-list");
   listEl.innerHTML = "";
-  state.pendingPageFiles.forEach((file, idx) => {
+  state.pendingPageFiles.forEach((item, idx) => {
     const li = document.createElement("li");
-    const url = URL.createObjectURL(file);
     li.innerHTML = `
-      <img src="${url}" alt="Página ${idx + 1}" />
+      <img class="${item.rotation ? "page-preview-rotated" : ""}" style="--page-rotation:${item.rotation}deg" src="${item.previewUrl}" alt="Página ${idx + 1}" />
       <span class="page-num">${idx + 1}</span>
+      <span class="page-editor-mode">${getCropLabel(item.crop)}</span>
+      <div class="page-editor-actions" aria-label="Editar página ${idx + 1}">
+        <button type="button" class="page-move-up" aria-label="Mover arriba" ${idx === 0 ? "disabled" : ""}><i class="fa-solid fa-arrow-up"></i></button>
+        <button type="button" class="page-move-down" aria-label="Mover abajo" ${idx === state.pendingPageFiles.length - 1 ? "disabled" : ""}><i class="fa-solid fa-arrow-down"></i></button>
+        <button type="button" class="page-rotate" aria-label="Girar 90 grados"><i class="fa-solid fa-rotate-right"></i></button>
+        <button type="button" class="page-crop" aria-label="Cambiar recorte"><i class="fa-solid fa-crop-simple"></i></button>
+      </div>
       <button type="button" class="page-remove" aria-label="Quitar página"><i class="fa-solid fa-xmark"></i></button>
     `;
+    li.querySelector(".page-move-up").addEventListener("click", () => {
+      state.pendingPageFiles = movePageItem(state.pendingPageFiles, idx, -1);
+      renderPagesPreview();
+    });
+    li.querySelector(".page-move-down").addEventListener("click", () => {
+      state.pendingPageFiles = movePageItem(state.pendingPageFiles, idx, 1);
+      renderPagesPreview();
+    });
+    li.querySelector(".page-rotate").addEventListener("click", () => updatePageEditorItem(idx, { rotation: normalizeRotation(item.rotation + 90) }));
+    li.querySelector(".page-crop").addEventListener("click", () => updatePageEditorItem(idx, { crop: nextCropMode(item.crop) }));
     li.querySelector(".page-remove").addEventListener("click", () => {
+      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
       state.pendingPageFiles.splice(idx, 1);
       renderPagesPreview();
     });
     listEl.appendChild(li);
   });
+}
+
+async function renderEditedPageFile(item){
+  if (item.rotation === 0 && item.crop === "original") return item.file;
+  const bitmap = await createImageBitmap(item.file);
+  const crop = getCropBox(bitmap.width, bitmap.height, item.crop);
+  const rotation = normalizeRotation(item.rotation);
+  const swapped = rotation === 90 || rotation === 270;
+  const canvas = document.createElement("canvas");
+  canvas.width = swapped ? Math.round(crop.height) : Math.round(crop.width);
+  canvas.height = swapped ? Math.round(crop.width) : Math.round(crop.height);
+  const context = canvas.getContext("2d");
+  context.translate(canvas.width / 2, canvas.height / 2);
+  context.rotate((rotation * Math.PI) / 180);
+  context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, -crop.width / 2, -crop.height / 2, crop.width, crop.height);
+  bitmap.close?.();
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.92));
+  if (!blob) throw new Error("No se pudo procesar la página");
+  return new File([blob], item.file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
 }
 
 $("#chapter-form").addEventListener("submit", async (e) => {
@@ -2537,7 +2703,7 @@ $("#chapter-form").addEventListener("submit", async (e) => {
     const pagePaths = [];
 
     for (let i = 0; i < total; i++) {
-      const file = state.pendingPageFiles[i];
+      const file = await renderEditedPageFile(state.pendingPageFiles[i]);
       const path = `comics/${comic.id}/chapters/${chapterRef.id}/page_${String(i + 1).padStart(3, "0")}.jpg`;
       const pageRef = ref(storage, path);
       await uploadBytes(pageRef, file);
@@ -2569,7 +2735,7 @@ $("#chapter-form").addEventListener("submit", async (e) => {
     comic.chaptersCount = (comic.chaptersCount || 0) + 1;
 
     toast("¡Capítulo publicado!", "success");
-    state.pendingPageFiles = [];
+    clearPageEditor();
     e.target.reset();
     renderPagesPreview();
 
