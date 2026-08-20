@@ -1291,10 +1291,6 @@ const db = getFirestore(firebaseApp);
 const storage = getStorage(firebaseApp);
 const rtdb = getDatabase(firebaseApp);
 
-setPersistence(auth, browserLocalPersistence).catch(() => {
-  /* si falla, el navegador usará la persistencia por defecto */
-});
-
 // =========================================================
 // InkToon — Lógica de la aplicación
 // =========================================================
@@ -1303,17 +1299,24 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
-  updateProfile
+  updateProfile,
+  deleteUser
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc,
   collection, addDoc, query, where, orderBy, limit,
   onSnapshot, serverTimestamp, increment, arrayUnion, arrayRemove,
-  getDocs, deleteField
+  getDocs, deleteField, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   ref, uploadBytes, getDownloadURL, deleteObject
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+import {
+  friendlyAuthError,
+  normalizeEmail,
+  normalizeUsername,
+  validateRegistrationInput
+} from "./auth-helpers.mjs";
 
 /* ---------------------------------------------------------
    Estado global de la app
@@ -1331,7 +1334,9 @@ const state = {
   activeGenreFilter: "todos",
   pendingCoverFile: null,
   pendingPageFiles: [],
-  unsubscribers: []
+  unsubscribers: [],
+  registrationInProgress: false,
+  sessionHydrationInProgress: false
 };
 
 const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/thumbs/svg?seed=";
@@ -1458,54 +1463,52 @@ $$(".auth-tab").forEach(tab => {
   tab.addEventListener("click", () => setAuthTab(tab.dataset.tab, true));
 });
 
-$("#login-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = $("#login-email").value.trim();
-  const password = $("#login-password").value;
-  const errorEl = $("#login-error");
-  errorEl.textContent = "";
-  const btn = e.target.querySelector("button[type=submit]");
-  btn.disabled = true;
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (err) {
-    errorEl.textContent = friendlyAuthError(err);
-  } finally {
-    btn.disabled = false;
-  }
-});
+function setAuthFormError(errorEl, message){
+  errorEl.textContent = message;
+  if (message) toast(message, "error");
+}
 
-$("#register-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const username = $("#register-username").value.trim();
-  const email = $("#register-email").value.trim();
-  const password = $("#register-password").value;
-  const errorEl = $("#register-error");
-  errorEl.textContent = "";
+function setSubmitState(button, isBusy, idleLabel, busyLabel){
+  button.disabled = isBusy;
+  button.textContent = isBusy ? busyLabel : idleLabel;
+  button.setAttribute("aria-busy", String(isBusy));
+}
 
-  if (!/^[a-zA-Z0-9_.]+$/.test(username)) {
-    errorEl.textContent = "El usuario solo puede tener letras, números, punto o guion bajo.";
-    return;
-  }
+function showAuthScreenWithError(message, tabName = "login"){
+  hide($("#boot-screen"));
+  hide($("#app"));
+  show($("#auth-screen"));
+  setAuthTab(tabName);
+  const errorEl = tabName === "register" ? $("#register-error") : $("#login-error");
+  errorEl.textContent = message;
+}
 
-  const btn = e.target.querySelector("button[type=submit]");
-  btn.disabled = true;
-  try {
-    const usernameQuery = query(collection(db, "usernames"), where("username", "==", username.toLowerCase()));
-    const existing = await getDocs(usernameQuery);
-    if (!existing.empty) {
-      errorEl.textContent = "Ese nombre de usuario ya está en uso.";
-      btn.disabled = false;
-      return;
+async function reserveUsernameAndCreateProfile(user, { username, email, avatar }){
+  const usernameLower = normalizeUsername(username);
+  const usernameRef = doc(db, "usernames", usernameLower);
+  const profileRef = doc(db, "users", user.uid);
+  const legacyUsernameQuery = query(
+    collection(db, "usernames"),
+    where("username", "==", usernameLower),
+    limit(1)
+  );
+
+  await runTransaction(db, async (transaction) => {
+    const [usernameSnap, legacyMatches] = await Promise.all([
+      transaction.get(usernameRef),
+      transaction.get(legacyUsernameQuery)
+    ]);
+    const belongsToAnotherUser = usernameSnap.exists() && usernameSnap.data().uid !== user.uid;
+    const legacyOwnedByAnotherUser = !legacyMatches.empty && legacyMatches.docs.some(match => match.data().uid !== user.uid);
+    if (belongsToAnotherUser || legacyOwnedByAnotherUser) {
+      const error = new Error("Username is already reserved");
+      error.code = "app/username-already-in-use";
+      throw error;
     }
 
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    const avatar = avatarFor(username);
-    await updateProfile(cred.user, { displayName: username, photoURL: avatar });
-
-    await setDoc(doc(db, "users", cred.user.uid), {
+    transaction.set(profileRef, {
       username,
-      usernameLower: username.toLowerCase(),
+      usernameLower,
       email,
       bio: "",
       avatar,
@@ -1515,33 +1518,72 @@ $("#register-form").addEventListener("submit", async (e) => {
       likesCount: 0,
       savedComics: []
     });
+    transaction.set(usernameRef, { username: usernameLower, uid: user.uid });
+  });
+}
 
-    await setDoc(doc(db, "usernames", cred.user.uid), {
-      username: username.toLowerCase(),
-      uid: cred.user.uid
-    });
-
-    toast("Cuenta creada. ¡Bienvenido a InkToon!", "success");
+$("#login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = normalizeEmail($("#login-email").value);
+  const password = $("#login-password").value;
+  const errorEl = $("#login-error");
+  errorEl.textContent = "";
+  const btn = e.target.querySelector("button[type=submit]");
+  setSubmitState(btn, true, "Entrar", "Entrando…");
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
   } catch (err) {
-    errorEl.textContent = friendlyAuthError(err);
+    setAuthFormError(errorEl, friendlyAuthError(err));
   } finally {
-    btn.disabled = false;
+    setSubmitState(btn, false, "Entrar", "Entrando…");
   }
 });
 
-function friendlyAuthError(err){
-  const code = err && err.code ? err.code : "";
-  const map = {
-    "auth/email-already-in-use": "Ese correo ya tiene una cuenta.",
-    "auth/invalid-email": "El correo no es válido.",
-    "auth/weak-password": "La contraseña necesita al menos 6 caracteres.",
-    "auth/user-not-found": "No existe una cuenta con ese correo.",
-    "auth/wrong-password": "Contraseña incorrecta.",
-    "auth/invalid-credential": "Correo o contraseña incorrectos.",
-    "auth/too-many-requests": "Demasiados intentos. Espera un momento."
-  };
-  return map[code] || "Algo salió mal. Inténtalo de nuevo.";
-}
+$("#register-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const username = $("#register-username").value.trim();
+  const email = normalizeEmail($("#register-email").value);
+  const password = $("#register-password").value;
+  const errorEl = $("#register-error");
+  errorEl.textContent = "";
+
+  const validationError = validateRegistrationInput({ username, email, password });
+  if (validationError) {
+    setAuthFormError(errorEl, validationError);
+    return;
+  }
+
+  const btn = e.target.querySelector("button[type=submit]");
+  let createdUser = null;
+  state.registrationInProgress = true;
+  setSubmitState(btn, true, "Crear cuenta", "Creando cuenta…");
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    createdUser = cred.user;
+    const avatar = avatarFor(username);
+    await updateProfile(cred.user, { displayName: username, photoURL: avatar });
+    await reserveUsernameAndCreateProfile(cred.user, { username, email, avatar });
+    state.registrationInProgress = false;
+    await hydrateAuthenticatedUser(cred.user);
+    toast("Cuenta creada. ¡Bienvenido a InkToon!", "success");
+  } catch (err) {
+    if (createdUser) {
+      try {
+        await deleteUser(createdUser);
+      } catch (cleanupError) {
+        console.error("[Auth] No se pudo revertir el registro incompleto", cleanupError);
+      }
+    }
+    setAuthFormError(errorEl, friendlyAuthError(err));
+  } finally {
+    state.registrationInProgress = false;
+    setSubmitState(btn, false, "Crear cuenta", "Creando cuenta…");
+  }
+});
+
+
+$("#login-form").addEventListener("input", () => { $("#login-error").textContent = ""; });
+$("#register-form").addEventListener("input", () => { $("#register-error").textContent = ""; });
 
 $("#btn-logout").addEventListener("click", async () => {
   await signOut(auth);
@@ -1551,19 +1593,22 @@ $("#btn-logout").addEventListener("click", async () => {
 /* ---------------------------------------------------------
    Observador de sesión — arranca la app
 --------------------------------------------------------- */
-onAuthStateChanged(auth, async (user) => {
+async function hydrateAuthenticatedUser(user){
+  if (state.sessionHydrationInProgress) return;
+  state.sessionHydrationInProgress = true;
   hide($("#boot-screen"));
   hide($("#view-edit-profile"));
   state.unsubscribers.forEach(u => u());
   state.unsubscribers = [];
 
-  if (user) {
+  try {
     state.user = user;
-    let profileSnap = await getDoc(doc(db, "users", user.uid));
+    const profileRef = doc(db, "users", user.uid);
+    let profileSnap = await getDoc(profileRef);
     if (!profileSnap.exists()) {
       const fallback = {
         username: user.displayName || "usuario",
-        usernameLower: (user.displayName || "usuario").toLowerCase(),
+        usernameLower: normalizeUsername(user.displayName || "usuario"),
         email: user.email || "",
         bio: "",
         avatar: user.photoURL || avatarFor(user.uid),
@@ -1573,23 +1618,55 @@ onAuthStateChanged(auth, async (user) => {
         likesCount: 0,
         savedComics: []
       };
-      await setDoc(doc(db, "users", user.uid), fallback);
-      profileSnap = await getDoc(doc(db, "users", user.uid));
+      await setDoc(profileRef, fallback);
+      profileSnap = await getDoc(profileRef);
     }
+
     state.profile = profileSnap.data();
     state.savedComicIds = state.profile.savedComics || [];
-
     hide($("#auth-screen"));
     show($("#app"));
     applyProfileToChrome();
     goToView("feed");
-  } else {
+  } catch (err) {
+    console.error("[Auth] No se pudo restaurar la sesión", err);
     state.user = null;
     state.profile = null;
+    state.savedComicIds = [];
+    showAuthScreenWithError(friendlyAuthError(err));
+    await signOut(auth).catch(signOutError => console.error("[Auth] No se pudo cerrar la sesión incompleta", signOutError));
+  } finally {
+    state.sessionHydrationInProgress = false;
+  }
+}
+
+async function startSessionObserver(){
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch (err) {
+    console.warn("[Auth] No se pudo habilitar la persistencia local", err);
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (state.registrationInProgress) return;
+    if (user) {
+      await hydrateAuthenticatedUser(user);
+      return;
+    }
+
+    hide($("#boot-screen"));
+    state.user = null;
+    state.profile = null;
+    state.savedComicIds = [];
     hide($("#app"));
     show($("#auth-screen"));
-  }
-});
+  }, (err) => {
+    console.error("[Auth] El observador de sesión falló", err);
+    showAuthScreenWithError(friendlyAuthError(err));
+  });
+}
+
+startSessionObserver();
 
 function applyProfileToChrome(){
   const avatarUrl = state.profile?.avatar || avatarFor(state.user?.uid);
