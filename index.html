@@ -113,6 +113,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .boot-mark h1{ font-family: var(--font-display); font-size: 28px; letter-spacing: 0.5px; }
 .boot-mark h1 em{ font-style:normal; color: var(--ink); }
 .boot-sub{ color: var(--text-faint); font-size: 13px; font-family: var(--font-mono); }
+.startup-recovery{ position:fixed; inset:0; z-index:1001; display:none; align-items:center; justify-content:center; padding:24px; background:var(--bg); }
+.startup-recovery-card{ width:min(100%, 390px); padding:24px; border:1px solid var(--border); border-radius:18px; background:var(--surface); text-align:center; }
+.startup-recovery-card i{ color:var(--ink); font-size:28px; }
+.startup-recovery-card h1{ margin-top:13px; font-family:var(--font-display); font-size:24px; }
+.startup-recovery-card p{ margin:8px 0 18px; color:var(--text-faint); font-size:13px; line-height:1.5; }
 
 .brand-mini, .side-brand, .auth-intro-brand, .auth-brand h1{ display:flex; align-items:center; gap:8px; }
 .brand-doodle{ position:relative; display:inline-block; width:19px; height:19px; flex:0 0 19px; transform:rotate(-18deg); }
@@ -884,6 +889,46 @@ html, body{ max-width:100%; overflow-x:hidden; }
   .form-actions-row .btn{ flex:1 1 132px; justify-content:center; }
 }
 
+/* =========================================================
+   EDITOR DE HISTORIA — composición móvil por secciones
+   ========================================================= */
+.story-editor{ width:min(100%, 680px); margin:0 auto; padding-bottom:24px; }
+.story-editor-head{ position:sticky; top:0; z-index:12; display:grid; grid-template-columns:42px 1fr 42px; align-items:center; min-height:58px; margin:0 -12px 20px; padding:0 12px; background:rgba(14,14,16,.96); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+.story-editor-head h2{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; font-family:var(--font-display); font-size:19px; }
+.story-editor-head .icon-btn{ justify-self:start; }
+.story-editor-head .editor-more{ justify-self:end; color:var(--red); }
+.story-editor-intro{ margin:0 4px 16px; color:var(--text-faint); font-size:12.5px; line-height:1.45; }
+.story-editor-section{ margin-top:28px; }
+.story-editor-section > h3{ margin:0 14px 10px; color:var(--red); font-size:19px; font-weight:500; }
+.story-editor-card{ overflow:hidden; border:1px solid var(--border); border-radius:22px; background:var(--surface); }
+.story-row{ display:flex; align-items:center; gap:12px; min-height:74px; padding:14px 18px; border-bottom:1px solid var(--border-soft); }
+.story-row:last-child{ border-bottom:0; }
+.story-row label, .story-row > span:first-child{ flex:1; min-width:0; color:var(--text); font-size:16px; }
+.story-row .required::before{ content:"*"; margin-right:7px; color:var(--red); font-weight:700; }
+.story-row .story-row-control{ min-width:0; max-width:59%; display:flex; align-items:center; justify-content:flex-end; gap:8px; }
+.story-row input, .story-row select{ width:100%; min-width:0; padding:7px 0; border:0; border-radius:0; background:transparent; color:var(--text-dim); text-align:right; font-size:16px; }
+.story-row select{ appearance:auto; color:var(--ink); }
+.story-row input:focus, .story-row select:focus{ outline:0; box-shadow:none; }
+.story-row .chevron{ color:var(--text-faint); font-size:17px; }
+.story-row .status-published{ color:var(--success); font-weight:800; }
+.story-row .status-verified{ padding:7px 12px; border-radius:8px; background:linear-gradient(135deg, #35bfe9, #1ab99c); color:#fff; font-size:13px; font-weight:700; }
+.story-textarea{ display:block; padding:18px; }
+.story-textarea span{ display:block; margin-bottom:8px; color:var(--text); font-size:16px; }
+.story-textarea textarea{ width:100%; min-height:128px; resize:vertical; border:0; border-radius:12px; background:var(--surface-2); color:var(--text); padding:13px; font:14px/1.5 var(--font-sans); }
+.story-cover-row{ display:flex; gap:14px; align-items:center; padding:16px 18px; }
+.story-cover-row .cover-uploader{ width:74px; height:108px; flex:0 0 74px; }
+.story-cover-row .cover-uploader-inner{ gap:4px; padding:7px; font-size:9px; }
+.story-cover-row .cover-uploader-inner i{ font-size:18px; }
+.story-cover-row .cover-uploader-inner small{ display:none; }
+.story-cover-copy{ min-width:0; }
+.story-cover-copy h4{ font-size:16px; }
+.story-cover-copy p{ margin-top:4px; color:var(--text-faint); font-size:12px; line-height:1.4; }
+.story-editor-actions{ position:sticky; bottom:0; z-index:10; display:flex; gap:9px; padding:14px 12px calc(14px + env(safe-area-inset-bottom)); margin:24px -12px -24px; border-top:1px solid var(--border); background:rgba(14,14,16,.96); backdrop-filter:blur(16px); }
+.story-editor-actions .btn{ flex:1; justify-content:center; }
+.story-editor .form-error{ margin:12px 5px 0; }
+.story-editor .form-draft-note{ margin:9px 5px 0; text-align:center; }
+@media (min-width:860px){ .story-editor-head{ margin-inline:-32px; padding-inline:32px; } .story-editor-actions{ margin-inline:-32px; padding-inline:32px; } }
+
 </style>
 </head>
 <body>
@@ -896,6 +941,45 @@ html, body{ max-width:100%; overflow-x:hidden; }
   </div>
   <p class="boot-sub">cargando tu biblioteca…</p>
 </div>
+<section id="startup-recovery" class="startup-recovery" aria-live="assertive" aria-label="Recuperación de carga">
+  <div class="startup-recovery-card">
+    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+    <h1>InkToon necesita recargar</h1>
+    <p id="startup-recovery-message">La aplicación tardó demasiado en iniciar. Inténtalo de nuevo para continuar.</p>
+    <button type="button" class="btn btn-primary" id="btn-retry-startup">Reintentar</button>
+  </div>
+</section>
+<script>
+  (function () {
+    var completed = false;
+    var recovery = document.getElementById('startup-recovery');
+    var boot = document.getElementById('boot-screen');
+    var message = document.getElementById('startup-recovery-message');
+    function showRecovery(text) {
+      if (completed) return;
+      if (boot) boot.style.display = 'none';
+      if (message && text) message.textContent = text;
+      if (recovery) recovery.style.display = 'flex';
+    }
+    window.__inktoonStartupComplete = function () {
+      completed = true;
+      if (recovery) recovery.style.display = 'none';
+    };
+    window.addEventListener('error', function () {
+      showRecovery('No pudimos iniciar InkToon en este navegador. Puedes reintentar la carga.');
+    });
+    window.addEventListener('unhandledrejection', function () {
+      showRecovery('No pudimos terminar de cargar InkToon. Vuelve a intentarlo.');
+    });
+    window.setTimeout(function () {
+      showRecovery('La conexión tardó demasiado. Reintenta para abrir InkToon.');
+    }, 9000);
+    window.addEventListener('DOMContentLoaded', function () {
+      var retry = document.getElementById('btn-retry-startup');
+      if (retry) retry.addEventListener('click', function () { window.location.reload(); });
+    });
+  }());
+</script>
 
 <!-- ======================= ACCESO Y REGISTRO — PANTALLA COMPLETA ======================= -->
 <section id="auth-screen" class="auth-screen hidden" aria-label="Acceso a InkToon">
@@ -1157,80 +1241,80 @@ html, body{ max-width:100%; overflow-x:hidden; }
 
       <!-- ===== VISTA: SUBIR CÓMIC (crear serie) ===== -->
       <section class="view hidden" id="view-upload">
-        <div class="section-head">
-          <h2>Publicar un cómic nuevo</h2>
-          <p>Crea la ficha de tu serie. Luego podrás subir capítulos.</p>
-        </div>
+        <form id="comic-form" class="story-editor">
+          <header class="story-editor-head">
+            <button type="button" class="icon-btn" id="btn-close-story-editor" aria-label="Volver al inicio"><i class="fa-solid fa-chevron-left"></i></button>
+            <h2>Crear historia</h2>
+            <button type="button" class="icon-btn editor-more" id="btn-story-editor-help" aria-label="Información del editor"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+          </header>
+          <p class="story-editor-intro">Completa la ficha de tu historia. Puedes guardar un borrador y continuar más tarde.</p>
 
-        <form id="comic-form" class="panel-form">
-          <ol class="publish-steps" aria-label="Pasos para publicar">
-            <li><b>01</b>Diseña la ficha</li>
-            <li><b>02</b>Publica la serie</li>
-            <li><b>03</b>Añade capítulos</li>
-          </ol>
-          <div class="form-grid">
-            <div class="cover-uploader" id="cover-uploader">
-              <input type="file" id="comic-cover-input" accept="image/*" hidden />
-              <div class="cover-uploader-inner" id="cover-preview-wrap">
-                <i class="fa-regular fa-image"></i>
-                <span>Portada del cómic</span>
-                <small>Relación 2:3 recomendada</small>
+          <section class="story-editor-card" aria-label="Datos principales">
+            <div class="story-row">
+              <label class="required" for="comic-title">Título</label>
+              <span class="story-row-control"><input type="text" id="comic-title" placeholder="Título de tu historia" required maxlength="60" /><i class="fa-solid fa-chevron-right chevron" aria-hidden="true"></i></span>
+            </div>
+            <div class="story-row"><span>Estado</span><span class="story-row-control"><strong class="status-published">Borrador</strong></span></div>
+            <div class="story-row">
+              <label for="comic-story-type">Tipo de historia</label>
+              <span class="story-row-control"><select id="comic-story-type"><option value="cómic">Cómic</option><option value="novela gráfica">Novela gráfica</option><option value="manga">Manga</option><option value="webtoon">Webtoon</option></select></span>
+            </div>
+            <div class="story-row"><span>Estado de verificación</span><span class="story-row-control"><strong class="status-verified">Pendiente</strong></span></div>
+            <div class="story-row">
+              <label for="comic-coauthors">Coautores</label>
+              <span class="story-row-control"><input type="text" id="comic-coauthors" placeholder="Invitar por correo" maxlength="240" /><i class="fa-solid fa-chevron-right chevron" aria-hidden="true"></i></span>
+            </div>
+          </section>
+
+          <section class="story-editor-section" aria-labelledby="story-info-title">
+            <h3 id="story-info-title">Información de la historia</h3>
+            <div class="story-editor-card">
+              <div class="story-row">
+                <label class="required" for="comic-category">Categoría</label>
+                <span class="story-row-control"><select id="comic-category"><option value="cómics">Cómics</option><option value="novela gráfica">Novela gráfica</option><option value="manga">Manga</option><option value="webtoon">Webtoon</option></select></span>
               </div>
-              <img id="cover-preview-img" class="hidden" alt="Vista previa de portada" />
-            </div>
-
-            <div class="form-fields">
-              <label class="field">
-                <span>Título</span>
-                <input type="text" id="comic-title" placeholder="Ej. Sombras de Ébano" required maxlength="60" />
-              </label>
-
-              <label class="field">
-                <span>Descripción</span>
-                <textarea id="comic-description" rows="4" placeholder="De qué trata tu historia…" required maxlength="600"></textarea>
-              </label>
-
-              <div class="field-row">
-                <label class="field">
-                  <span>Género</span>
-                  <select id="comic-genre" required>
-                    <option value="acción">Acción</option>
-                    <option value="romance">Romance</option>
-                    <option value="fantasía">Fantasía</option>
-                    <option value="terror">Terror</option>
-                    <option value="comedia">Comedia</option>
-                    <option value="drama">Drama</option>
-                    <option value="sci-fi">Sci-Fi</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span>Estado</span>
-                  <select id="comic-status" required>
-                    <option value="en curso">En curso</option>
-                    <option value="finalizado">Finalizado</option>
-                    <option value="pausado">En pausa</option>
-                  </select>
-                </label>
+              <div class="story-row">
+                <label class="required" for="comic-genre">Subcategoría</label>
+                <span class="story-row-control"><select id="comic-genre" required><option value="acción">Acción</option><option value="romance">Romance</option><option value="fantasía">Fantasía</option><option value="terror">Terror</option><option value="comedia">Comedia</option><option value="drama">Drama</option><option value="sci-fi">Sci-Fi</option></select></span>
               </div>
-
-              <label class="field">
-                <span>Etiquetas <small>(separadas por coma)</small></span>
-                <input type="text" id="comic-tags" placeholder="mundo oscuro, magia, venganza" />
-              </label>
+              <div class="story-row">
+                <label class="required" for="comic-language">Idioma</label>
+                <span class="story-row-control"><select id="comic-language"><option value="Español">Español</option><option value="English">English</option><option value="Português">Português</option></select></span>
+              </div>
+              <div class="story-row">
+                <label class="required" for="comic-status">Progreso de la historia</label>
+                <span class="story-row-control"><select id="comic-status" required><option value="en curso">En progreso</option><option value="finalizado">Finalizada</option><option value="pausado">En pausa</option></select></span>
+              </div>
+              <div class="story-row">
+                <label class="required" for="comic-update-frequency">Frecuencia de actualización</label>
+                <span class="story-row-control"><select id="comic-update-frequency"><option value="semanal">Cada semana</option><option value="quincenal">Cada 15 días</option><option value="mensual">Cada 30 días</option><option value="irregular">Irregular</option></select></span>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div class="form-actions">
-            <p class="upload-progress hidden" id="comic-upload-progress">
-              <span class="upload-progress-bar" id="comic-upload-progress-bar"></span>
-            </p>
-            <p class="form-error" id="comic-form-error"></p>
-            <div class="form-actions-row">
-              <button type="button" class="btn btn-outline" id="btn-save-comic-draft"><i class="fa-regular fa-floppy-disk"></i> Guardar borrador</button>
-              <button type="submit" class="btn btn-primary" id="comic-submit-btn">Publicar cómic</button>
+          <section class="story-editor-section" aria-labelledby="story-detail-title">
+            <h3 id="story-detail-title">Detalles y portada</h3>
+            <div class="story-editor-card">
+              <label class="story-textarea" for="comic-description"><span class="required">Sinopsis</span><textarea id="comic-description" placeholder="Cuéntale a los lectores de qué trata tu historia…" required maxlength="600"></textarea></label>
+              <div class="story-cover-row">
+                <div class="cover-uploader" id="cover-uploader">
+                  <input type="file" id="comic-cover-input" accept="image/*" hidden />
+                  <div class="cover-uploader-inner" id="cover-preview-wrap"><i class="fa-regular fa-image"></i><span>Portada</span><small>2:3</small></div>
+                  <img id="cover-preview-img" class="hidden" alt="Vista previa de portada" />
+                </div>
+                <div class="story-cover-copy"><h4>Portada de la historia</h4><p>Elige una imagen vertical. Es la primera impresión de tu serie.</p></div>
+              </div>
+              <div class="story-row"><label for="comic-tags">Etiquetas</label><span class="story-row-control"><input type="text" id="comic-tags" placeholder="magia, drama…" /></span></div>
             </div>
-            <p class="form-draft-note" id="comic-draft-status" aria-live="polite">La portada se elige nuevamente al restaurar un borrador.</p>
-          </div>
+          </section>
+
+          <p class="upload-progress hidden" id="comic-upload-progress"><span class="upload-progress-bar" id="comic-upload-progress-bar"></span></p>
+          <p class="form-error" id="comic-form-error"></p>
+          <p class="form-draft-note" id="comic-draft-status" aria-live="polite">Los cambios se guardan como borrador en este dispositivo.</p>
+          <footer class="story-editor-actions">
+            <button type="button" class="btn btn-outline" id="btn-save-comic-draft"><i class="fa-regular fa-floppy-disk"></i> Borrador</button>
+            <button type="submit" class="btn btn-primary" id="comic-submit-btn">Publicar</button>
+          </footer>
         </form>
       </section>
 
@@ -1723,6 +1807,7 @@ function setSubmitState(button, isBusy, idleLabel, busyLabel){
 }
 
 function showAuthScreenWithError(message, tabName = "login"){
+  window.__inktoonStartupComplete?.();
   hide($("#boot-screen"));
   hide($("#app"));
   show($("#auth-screen"));
@@ -1848,6 +1933,7 @@ $("#btn-logout").addEventListener("click", async () => {
 async function hydrateAuthenticatedUser(user){
   if (state.sessionHydrationInProgress) return;
   state.sessionHydrationInProgress = true;
+  window.__inktoonStartupComplete?.();
   hide($("#boot-screen"));
   hide($("#view-edit-profile"));
   state.unsubscribers.forEach(u => u());
@@ -1895,6 +1981,7 @@ async function startSessionObserver(){
       return;
     }
 
+    window.__inktoonStartupComplete?.();
     hide($("#boot-screen"));
     state.user = null;
     state.profile = null;
@@ -2278,8 +2365,13 @@ function readComicDraftForm(){
   return {
     title: $("#comic-title").value.trim(),
     description: $("#comic-description").value.trim(),
+    storyType: $("#comic-story-type").value,
+    coauthors: $("#comic-coauthors").value.trim(),
+    category: $("#comic-category").value,
     genre: $("#comic-genre").value,
+    language: $("#comic-language").value,
     status: $("#comic-status").value,
+    updateFrequency: $("#comic-update-frequency").value,
     tags: $("#comic-tags").value,
     updatedAt: Date.now()
   };
@@ -2307,8 +2399,13 @@ function restoreComicDraft(){
     if (!draft) return;
     $("#comic-title").value = draft.title || "";
     $("#comic-description").value = draft.description || "";
+    $("#comic-story-type").value = draft.storyType || "cómic";
+    $("#comic-coauthors").value = draft.coauthors || "";
+    $("#comic-category").value = draft.category || "cómics";
     $("#comic-genre").value = draft.genre || "acción";
+    $("#comic-language").value = draft.language || "Español";
     $("#comic-status").value = draft.status || "en curso";
+    $("#comic-update-frequency").value = draft.updateFrequency || "semanal";
     $("#comic-tags").value = draft.tags || "";
     $("#comic-draft-status").textContent = "Borrador restaurado. Elige la portada para continuar publicando.";
   } catch (error) { /* ignorar datos locales inválidos */ }
@@ -2323,6 +2420,14 @@ $("#btn-save-comic-draft").addEventListener("click", () => saveComicDraft(true))
 $("#comic-form").addEventListener("input", () => {
   clearTimeout(draftSaveTimer);
   draftSaveTimer = setTimeout(() => saveComicDraft(false), 500);
+});
+$("#comic-form").addEventListener("change", () => {
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(() => saveComicDraft(false), 150);
+});
+$("#btn-close-story-editor").addEventListener("click", () => goToView("feed"));
+$("#btn-story-editor-help").addEventListener("click", () => {
+  toast("Completa los datos principales, guarda un borrador y publica cuando tengas portada y sinopsis.", "info");
 });
 
 coverUploader.addEventListener("click", () => coverInput.click());
@@ -2347,8 +2452,13 @@ $("#comic-form").addEventListener("submit", async (e) => {
 
   const title = $("#comic-title").value.trim();
   const description = $("#comic-description").value.trim();
+  const storyType = $("#comic-story-type").value;
+  const category = $("#comic-category").value;
   const genre = $("#comic-genre").value;
+  const language = $("#comic-language").value;
   const status = $("#comic-status").value;
+  const updateFrequency = $("#comic-update-frequency").value;
+  const coauthors = $("#comic-coauthors").value.split(",").map(email => email.trim().toLowerCase()).filter(Boolean).slice(0, 5);
   const tags = $("#comic-tags").value.split(",").map(t => t.trim()).filter(Boolean).slice(0, 8);
 
   if (!state.pendingCoverFile) {
@@ -2380,8 +2490,14 @@ $("#comic-form").addEventListener("submit", async (e) => {
     await setDoc(comicRef, {
       title,
       description,
+      storyType,
+      category,
       genre,
+      language,
       status,
+      updateFrequency,
+      verificationStatus: "pending",
+      coauthors,
       tags,
       cover: coverUrl,
       coverPath,
