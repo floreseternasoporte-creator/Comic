@@ -1559,10 +1559,12 @@ $("#btn-empty-upload")?.addEventListener("click", () => goToView("upload"));
 
 /* Búsqueda independiente */
 function openSearch(query = ""){
+  lastSearchTerm = query;
   goToView("search");
   const input = $("#search-screen-input");
-  input.value = query.trim();
+  input.value = query;
   syncSearchInputs(input.value);
+  void runSearch(query);
   setTimeout(() => input.focus(), 0);
 }
 
