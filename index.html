@@ -2465,13 +2465,9 @@ $("#comic-form").addEventListener("submit", async (e) => {
 
   try {
     const comicRef = doc(collection(db, "comics"));
-    const coverPath = `comics/${comicRef.id}/cover_${Date.now()}.jpg`;
-    const coverRef = ref(storage, coverPath);
-
     progressBar.style.width = "40%";
-    await uploadBytes(coverRef, state.pendingCoverFile);
+    const coverBase64 = await imageFileToBase64(state.pendingCoverFile, BASE64_LIMITS.cover, "La portada");
     progressBar.style.width = "75%";
-    const coverUrl = await getDownloadURL(coverRef);
 
     await setDoc(comicRef, {
       title,
@@ -2485,8 +2481,8 @@ $("#comic-form").addEventListener("submit", async (e) => {
       verificationStatus: "pending",
       coauthors,
       tags,
-      cover: coverUrl,
-      coverPath,
+      cover: coverBase64,
+      coverStorage: "base64",
       authorId: state.user.uid,
       authorName: state.profile.username,
       authorAvatar: state.profile.avatar,
@@ -2497,8 +2493,8 @@ $("#comic-form").addEventListener("submit", async (e) => {
       updatedAt: serverTimestamp()
     });
 
-    await updateDoc(doc(db, "users", state.user.uid), {
-      comicsCount: increment(1)
+    void updateDoc(doc(db, "users", state.user.uid), { comicsCount: increment(1) }).catch(error => {
+      console.warn("[Publish] No se pudo actualizar el contador del perfil", error);
     });
     state.profile.comicsCount = (state.profile.comicsCount || 0) + 1;
 
@@ -2519,7 +2515,7 @@ $("#comic-form").addEventListener("submit", async (e) => {
 
   } catch (err) {
     console.error(err);
-    errorEl.textContent = "No se pudo publicar el cómic. Revisa tu conexión e inténtalo de nuevo.";
+    errorEl.textContent = err instanceof Error ? err.message : "No se pudo publicar el cómic. Revisa tu conexión e inténtalo de nuevo.";
     hide(progressWrap);
     progressBar.style.width = "0%";
   } finally {
@@ -2657,20 +2653,15 @@ $("#avatar-input").addEventListener("change", async () => {
   }
   toast("Actualizando foto de perfil…", "info");
   try {
-    const avatarPath = `avatars/${state.user.uid}.jpg`;
-    const avatarRef = ref(storage, avatarPath);
-    await uploadBytes(avatarRef, file);
-    const url = await getDownloadURL(avatarRef);
-
-    await updateDoc(doc(db, "users", state.user.uid), { avatar: url });
-    await updateProfile(state.user, { photoURL: url });
+    const url = await imageFileToBase64(file, BASE64_LIMITS.avatar, "La foto de perfil");
+    await updateDoc(doc(db, "users", state.user.uid), { avatar: url, avatarStorage: "base64" });
 
     state.profile.avatar = url;
     applyProfileToChrome();
     $("#profile-avatar").src = url;
     toast("Foto de perfil actualizada", "success");
   } catch (err) {
-    toast("No se pudo subir la imagen.", "error");
+    toast(err instanceof Error ? err.message : "No se pudo guardar la imagen.", "error");
   }
 });
 
@@ -2861,7 +2852,7 @@ function renderChapterRow(ch, comic){
     <div class="chapter-row-num">EP. ${escapeHTML(ch.number)}</div>
     <div class="chapter-row-body">
       <h4>${escapeHTML(ch.title || `Capítulo ${ch.number}`)}</h4>
-      <span>${escapeHTML(ch.pages ? ch.pages.length : 0)} páginas · ${timeAgo(ch.createdAt)}</span>
+      <span>${escapeHTML(ch.pageCount ?? (ch.pages ? ch.pages.length : 0))} páginas · ${timeAgo(ch.createdAt)}</span>
     </div>
     <i class="fa-solid fa-chevron-right chapter-row-arrow"></i>
     ${isOwner ? `<button class="chapter-row-delete" aria-label="Eliminar capítulo"><i class="fa-solid fa-trash"></i></button>` : ""}
@@ -3026,6 +3017,50 @@ function renderPagesPreview(){
   });
 }
 
+const BASE64_LIMITS = { cover: 550000, page: 600000, avatar: 250000 };
+
+function imageFileToBase64(file, maxBytes, label){
+  if (!file?.type?.startsWith("image/")) throw new Error(`${label} debe ser una imagen válida.`);
+  if (file.size > maxBytes) return compressImageToBase64(file, maxBytes, label);
+  return readFileAsDataUrl(file, label);
+}
+
+function readFileAsDataUrl(file, label){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error(`No se pudo convertir ${label.toLowerCase()}.`));
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function compressImageToBase64(file, maxBytes, label){
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error(`No se pudo preparar ${label.toLowerCase()}.`));
+      element.src = objectUrl;
+    });
+    let scale = Math.min(1, 1440 / Math.max(image.naturalWidth, image.naturalHeight));
+    let quality = 0.82;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
+      if (blob && blob.size <= maxBytes) return readFileAsDataUrl(blob, label);
+      scale *= 0.76;
+      quality = Math.max(0.55, quality - 0.08);
+    }
+    throw new Error(`${label} sigue siendo demasiado grande después de optimizarla. Prueba una imagen más pequeña.`);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 async function renderEditedPageFile(item){
   if (item.rotation === 0 && item.crop === "original") return item.file;
   const bitmap = await createImageBitmap(item.file);
@@ -3086,17 +3121,15 @@ $("#chapter-form").addEventListener("submit", async (e) => {
   try {
     const chapterRef = doc(collection(db, "chapters"));
     const total = state.pendingPageFiles.length;
-    const pages = [];
-    const pagePaths = [];
 
     for (let i = 0; i < total; i++) {
       const file = await renderEditedPageFile(state.pendingPageFiles[i]);
-      const path = `comics/${comic.id}/chapters/${chapterRef.id}/page_${String(i + 1).padStart(3, "0")}.jpg`;
-      const pageRef = ref(storage, path);
-      await uploadBytes(pageRef, file);
-      const url = await getDownloadURL(pageRef);
-      pages.push(url);
-      pagePaths.push(path);
+      const image = await imageFileToBase64(file, BASE64_LIMITS.page, `La página ${i + 1}`);
+      await setDoc(doc(db, "chapters", chapterRef.id, "pages", String(i + 1).padStart(4, "0")), {
+        index: i,
+        image,
+        createdAt: serverTimestamp()
+      });
       progressBar.style.width = `${Math.round(((i + 1) / total) * 100)}%`;
     }
 
@@ -3108,17 +3141,17 @@ $("#chapter-form").addEventListener("submit", async (e) => {
       number,
       title,
       notes,
-      pages,
-      pagePaths,
+      pageStorage: "base64",
+      pageCount: total,
       likesCount: 0,
       likedBy: [],
       createdAt: serverTimestamp()
     });
 
-    await updateDoc(doc(db, "comics", comic.id), {
+    void updateDoc(doc(db, "comics", comic.id), {
       chaptersCount: increment(1),
       updatedAt: serverTimestamp()
-    });
+    }).catch(error => console.warn("[Publish] No se pudo actualizar el contador del cómic", error));
     comic.chaptersCount = (comic.chaptersCount || 0) + 1;
 
     toast("¡Capítulo publicado!", "success");
@@ -3136,7 +3169,7 @@ $("#chapter-form").addEventListener("submit", async (e) => {
 
   } catch (err) {
     console.error(err);
-    errorEl.textContent = "No se pudo publicar el capítulo. Inténtalo de nuevo.";
+    errorEl.textContent = err instanceof Error ? err.message : "No se pudo publicar el capítulo. Inténtalo de nuevo.";
     hide(progressWrap);
     progressBar.style.width = "0%";
   } finally {
@@ -3147,7 +3180,14 @@ $("#chapter-form").addEventListener("submit", async (e) => {
 /* ---------------------------------------------------------
    LECTOR — scroll vertical continuo (elemento distintivo)
 --------------------------------------------------------- */
-function openReader(index){
+async function getChapterPageSources(chapter){
+  if (Array.isArray(chapter.pages)) return chapter.pages;
+  if (chapter.pageStorage !== "base64") return [];
+  const snapshot = await getDocs(query(collection(db, "chapters", chapter.id, "pages"), orderBy("index", "asc")));
+  return snapshot.docs.map(item => item.data().image).filter(Boolean);
+}
+
+async function openReader(index){
   if (index < 0 || index >= state.activeChapters.length) return;
   state.activeChapterIndex = index;
   const chapter = state.activeChapters[index];
@@ -3158,8 +3198,21 @@ function openReader(index){
   $("#reader-chapter-title").textContent = `Cap. ${chapter.number} — ${chapter.title}`;
 
   const pagesWrap = $("#reader-pages");
+  pagesWrap.innerHTML = `<div class="feed-empty">Cargando páginas…</div>`;
+  let pages;
+  try {
+    pages = await getChapterPageSources(chapter);
+  } catch (error) {
+    pagesWrap.innerHTML = `<div class="feed-empty">No se pudieron cargar las páginas de este capítulo.</div>`;
+    return;
+  }
+  if (state.activeChapters[state.activeChapterIndex]?.id !== chapter.id) return;
+  if (!pages.length) {
+    pagesWrap.innerHTML = `<div class="feed-empty">Este capítulo aún no tiene páginas disponibles.</div>`;
+    return;
+  }
   pagesWrap.innerHTML = "";
-  (chapter.pages || []).forEach((url, i) => {
+  pages.forEach((url, i) => {
     const img = document.createElement("img");
     img.loading = i < 2 ? "eager" : "lazy";
     img.alt = `Página ${i + 1}`;
