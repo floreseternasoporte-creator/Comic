@@ -1275,6 +1275,7 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 const firebaseConfig = {
+  // La configuración web pública de Firebase se mantiene en este archivo por decisión del proyecto.
   apiKey: "AIzaSyC9v2qp6zGtmvsFiOknlmTHnN6zZY1RLcI",
   authDomain: "ggggg-f2508.firebaseapp.com",
   databaseURL: "https://ggggg-f2508-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -1299,19 +1300,19 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
-  updateProfile,
-  deleteUser
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
   doc, setDoc, getDoc, updateDoc, deleteDoc,
   collection, addDoc, query, where, orderBy, limit,
   onSnapshot, serverTimestamp, increment, arrayUnion, arrayRemove,
-  getDocs, deleteField, runTransaction
+  getDocs, deleteField
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   ref, uploadBytes, getDownloadURL, deleteObject
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 import {
+  createLocalProfile,
   friendlyAuthError,
   normalizeEmail,
   normalizeUsername,
@@ -1483,43 +1484,29 @@ function showAuthScreenWithError(message, tabName = "login"){
   errorEl.textContent = message;
 }
 
-async function reserveUsernameAndCreateProfile(user, { username, email, avatar }){
-  const usernameLower = normalizeUsername(username);
-  const usernameRef = doc(db, "usernames", usernameLower);
-  const profileRef = doc(db, "users", user.uid);
-  const legacyUsernameQuery = query(
-    collection(db, "usernames"),
-    where("username", "==", usernameLower),
-    limit(1)
-  );
+function createFirestoreProfile(profile){
+  return {
+    ...profile,
+    createdAt: serverTimestamp()
+  };
+}
 
-  await runTransaction(db, async (transaction) => {
-    const [usernameSnap, legacyMatches] = await Promise.all([
-      transaction.get(usernameRef),
-      transaction.get(legacyUsernameQuery)
-    ]);
-    const belongsToAnotherUser = usernameSnap.exists() && usernameSnap.data().uid !== user.uid;
-    const legacyOwnedByAnotherUser = !legacyMatches.empty && legacyMatches.docs.some(match => match.data().uid !== user.uid);
-    if (belongsToAnotherUser || legacyOwnedByAnotherUser) {
-      const error = new Error("Username is already reserved");
-      error.code = "app/username-already-in-use";
-      throw error;
-    }
+function activateAuthenticatedUI(user, profile){
+  state.user = user;
+  state.profile = profile;
+  state.savedComicIds = profile.savedComics || [];
+  hide($("#auth-screen"));
+  show($("#app"));
+  applyProfileToChrome();
+  goToView("feed");
+}
 
-    transaction.set(profileRef, {
-      username,
-      usernameLower,
-      email,
-      bio: "",
-      avatar,
-      createdAt: serverTimestamp(),
-      comicsCount: 0,
-      followersCount: 0,
-      likesCount: 0,
-      savedComics: []
-    });
-    transaction.set(usernameRef, { username: usernameLower, uid: user.uid });
-  });
+async function persistProfileWithoutBlocking(user, profile){
+  try {
+    await setDoc(doc(db, "users", user.uid), createFirestoreProfile(profile), { merge: true });
+  } catch (err) {
+    console.warn("[Auth] La cuenta se creó, pero el perfil no pudo sincronizarse todavía", err);
+  }
 }
 
 $("#login-form").addEventListener("submit", async (e) => {
@@ -1554,26 +1541,22 @@ $("#register-form").addEventListener("submit", async (e) => {
   }
 
   const btn = e.target.querySelector("button[type=submit]");
-  let createdUser = null;
   state.registrationInProgress = true;
   setSubmitState(btn, true, "Crear cuenta", "Creando cuenta…");
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
-    createdUser = cred.user;
     const avatar = avatarFor(username);
-    await updateProfile(cred.user, { displayName: username, photoURL: avatar });
-    await reserveUsernameAndCreateProfile(cred.user, { username, email, avatar });
+    try {
+      await updateProfile(cred.user, { displayName: username, photoURL: avatar });
+    } catch (profileUpdateError) {
+      console.warn("[Auth] La cuenta se creó, pero no se pudo actualizar el nombre visible", profileUpdateError);
+    }
+    const localProfile = createLocalProfile({ ...cred.user, photoURL: avatar }, username);
     state.registrationInProgress = false;
-    await hydrateAuthenticatedUser(cred.user);
+    activateAuthenticatedUI(cred.user, localProfile);
+    void persistProfileWithoutBlocking(cred.user, localProfile);
     toast("Cuenta creada. ¡Bienvenido a InkToon!", "success");
   } catch (err) {
-    if (createdUser) {
-      try {
-        await deleteUser(createdUser);
-      } catch (cleanupError) {
-        console.error("[Auth] No se pudo revertir el registro incompleto", cleanupError);
-      }
-    }
     setAuthFormError(errorEl, friendlyAuthError(err));
   } finally {
     state.registrationInProgress = false;
@@ -1604,30 +1587,19 @@ async function hydrateAuthenticatedUser(user){
   try {
     state.user = user;
     const profileRef = doc(db, "users", user.uid);
-    let profileSnap = await getDoc(profileRef);
-    if (!profileSnap.exists()) {
-      const fallback = {
-        username: user.displayName || "usuario",
-        usernameLower: normalizeUsername(user.displayName || "usuario"),
-        email: user.email || "",
-        bio: "",
-        avatar: user.photoURL || avatarFor(user.uid),
-        createdAt: serverTimestamp(),
-        comicsCount: 0,
-        followersCount: 0,
-        likesCount: 0,
-        savedComics: []
-      };
-      await setDoc(profileRef, fallback);
-      profileSnap = await getDoc(profileRef);
+    const localProfile = createLocalProfile(user);
+    try {
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists()) {
+        Object.assign(localProfile, profileSnap.data());
+      } else {
+        void persistProfileWithoutBlocking(user, localProfile);
+      }
+    } catch (profileError) {
+      console.warn("[Auth] No se pudo leer el perfil remoto; se usará el perfil local", profileError);
     }
 
-    state.profile = profileSnap.data();
-    state.savedComicIds = state.profile.savedComics || [];
-    hide($("#auth-screen"));
-    show($("#app"));
-    applyProfileToChrome();
-    goToView("feed");
+    activateAuthenticatedUI(user, localProfile);
   } catch (err) {
     console.error("[Auth] No se pudo restaurar la sesión", err);
     state.user = null;

@@ -29,6 +29,21 @@ export function validateRegistrationInput({ username, email, password }) {
   return "";
 }
 
+export function createLocalProfile(user, preferredUsername) {
+  const username = String(preferredUsername ?? user?.displayName ?? "usuario").trim() || "usuario";
+  return {
+    username,
+    usernameLower: normalizeUsername(username),
+    email: normalizeEmail(user?.email),
+    bio: "",
+    avatar: user?.photoURL || `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(user?.uid || username)}`,
+    comicsCount: 0,
+    followersCount: 0,
+    likesCount: 0,
+    savedComics: [],
+  };
+}
+
 export function friendlyAuthError(error) {
   const code = String(error?.code ?? "");
   const messages = {

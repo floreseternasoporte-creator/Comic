@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  createLocalProfile,
   friendlyAuthError,
   normalizeEmail,
   normalizeUsername,
@@ -29,6 +30,25 @@ test("valida los datos de registro antes de crear una cuenta", () => {
     validateRegistrationInput({ username: "autor_01", email: "autor@ejemplo.com", password: "secreto" }),
     "",
   );
+});
+
+test("crea un perfil local utilizable aunque Firestore no esté disponible", () => {
+  const profile = createLocalProfile(
+    { uid: "abc123", email: "Lector@Ejemplo.com", displayName: null, photoURL: null },
+    "Lector_01",
+  );
+
+  assert.deepEqual(profile, {
+    username: "Lector_01",
+    usernameLower: "lector_01",
+    email: "lector@ejemplo.com",
+    bio: "",
+    avatar: "https://api.dicebear.com/7.x/thumbs/svg?seed=abc123",
+    comicsCount: 0,
+    followersCount: 0,
+    likesCount: 0,
+    savedComics: [],
+  });
 });
 
 test("convierte los errores técnicos de autenticación en mensajes comprensibles", () => {
