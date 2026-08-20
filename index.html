@@ -815,6 +815,75 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .publish-steps li{ padding:8px 6px; font-size:10px; }
 }
 
+/* =========================================================
+   EXPERIENCIA DE DESCUBRIMIENTO — diseño móvil por carriles
+   ========================================================= */
+html, body{ max-width:100%; overflow-x:hidden; }
+.app, .layout, .content, .view, .section-head, .comic-detail-info{ min-width:0; }
+.home-shell{ display:flex; flex-direction:column; gap:30px; }
+.home-hero{ position:relative; overflow:hidden; border:1px solid var(--border); border-radius:20px; padding:22px 18px; background:linear-gradient(140deg, #1e1d31 0%, #121218 55%, #111114 100%); }
+.home-hero::after{ content:""; position:absolute; width:220px; height:220px; right:-90px; top:-110px; border:28px solid rgba(111,92,255,.28); border-radius:45% 55% 65% 35%; transform:rotate(23deg); }
+.home-kicker{ position:relative; z-index:1; font:11px var(--font-mono); color:var(--ink); letter-spacing:.08em; text-transform:uppercase; }
+.home-hero h2{ position:relative; z-index:1; margin-top:7px; max-width:280px; font-family:var(--font-display); font-size:clamp(25px, 7vw, 36px); line-height:.96; letter-spacing:-.02em; }
+.home-hero p{ position:relative; z-index:1; max-width:320px; margin:11px 0 0; color:var(--text-dim); font-size:13px; line-height:1.45; }
+.home-hero-actions{ position:relative; z-index:1; display:flex; gap:8px; flex-wrap:wrap; margin-top:17px; }
+.discover-section{ min-width:0; }
+.discover-section-head{ display:flex; align-items:end; justify-content:space-between; gap:12px; margin-bottom:11px; }
+.discover-section-head h3{ min-width:0; font-family:var(--font-display); font-size:19px; line-height:1.1; }
+.discover-section-head p{ margin-top:3px; color:var(--text-faint); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.discover-more{ flex:0 0 auto; padding:5px 0; color:var(--ink); font-size:12px; font-weight:700; }
+.series-rail{ display:grid; grid-auto-flow:column; grid-auto-columns:minmax(132px, 37vw); grid-template-rows:1fr; gap:10px; overflow-x:auto; overscroll-behavior-inline:contain; scroll-snap-type:x mandatory; scroll-padding-inline:2px; padding:2px 2px 8px; margin:0 -2px; scrollbar-width:none; }
+.series-rail::-webkit-scrollbar{ display:none; }
+.series-card{ min-width:0; position:relative; display:block; overflow:hidden; padding:0; border:1px solid var(--border); border-radius:12px; background:var(--surface); text-align:left; color:var(--text); scroll-snap-align:start; }
+.series-card:active{ transform:scale(.98); }
+.series-cover{ aspect-ratio:2/3; width:100%; display:block; object-fit:cover; background:var(--surface-2); }
+.series-card-body{ padding:9px 9px 10px; }
+.series-card-title{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12.5px; font-weight:700; }
+.series-card-meta{ display:block; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-faint); font:10.5px var(--font-mono); }
+.series-card-badge{ position:absolute; left:7px; top:7px; padding:3px 5px; border-radius:4px; background:var(--red); color:#fff; font:9px var(--font-mono); font-weight:700; }
+.continue-card{ display:flex; align-items:center; gap:10px; min-height:86px; padding:8px; }
+.continue-card .series-cover{ flex:0 0 48px; width:48px; height:68px; border-radius:6px; }
+.continue-card .series-card-body{ flex:1; min-width:0; padding:0; }
+.continue-progress{ height:4px; margin-top:8px; overflow:hidden; border-radius:99px; background:var(--surface-2); }
+.continue-progress > span{ display:block; height:100%; background:var(--ink); }
+.home-filter-tabs, .explore-sort-tabs{ display:flex; gap:7px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
+.home-filter-tabs::-webkit-scrollbar, .explore-sort-tabs::-webkit-scrollbar{ display:none; }
+.home-filter-tabs button, .explore-sort-tabs button{ flex:0 0 auto; padding:7px 10px; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--text-faint); font-size:12px; font-weight:700; }
+.home-filter-tabs button.active, .explore-sort-tabs button.active{ background:var(--text); color:var(--bg); border-color:var(--text); }
+.new-episode-list{ display:flex; flex-direction:column; gap:8px; }
+.new-episode-list .chapter-card{ padding:10px; border-radius:12px; }
+.library-continue{ margin-bottom:26px; }
+.library-continue.hidden{ display:none; }
+.library-continue .series-rail{ grid-auto-columns:minmax(220px, 70vw); }
+.form-draft-note{ margin-top:8px; color:var(--text-faint); font-size:11.5px; line-height:1.4; }
+.form-actions-row{ display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
+.explore-layout{ display:flex; flex-direction:column; gap:15px; }
+.explore-layout .genre-chips{ margin:0; }
+.comic-grid{ grid-template-columns:repeat(auto-fill, minmax(108px, 1fr)); gap:10px; }
+.comic-grid-explore{ grid-template-columns:repeat(auto-fill, minmax(108px, 1fr)); }
+.comic-tile{ border-radius:10px; border:1px solid var(--border); }
+.comic-tile-overlay{ padding:8px; }
+.comic-tile-overlay h5{ font-size:12px; }
+.comic-tile-meta{ font-size:9px; }
+.bottom-nav{ justify-content:space-between; padding-inline:max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right)); }
+.bottom-link{ position:relative; flex:1; max-width:64px; }
+.bottom-link.active::after{ content:""; position:absolute; bottom:1px; width:4px; height:4px; border-radius:50%; background:var(--ink); }
+@media (min-width:860px){
+  .content{ max-width:1120px; }
+  .home-shell{ gap:38px; }
+  .home-hero{ padding:35px 32px; }
+  .series-rail{ grid-auto-columns:156px; }
+  .library-continue .series-rail{ grid-auto-columns:260px; }
+  .comic-grid, .comic-grid-explore{ grid-template-columns:repeat(5, minmax(0, 1fr)); gap:14px; }
+}
+@media (max-width:380px){
+  .series-rail{ grid-auto-columns:minmax(118px, 42vw); }
+  .home-hero{ padding:19px 15px; }
+  .home-hero-actions .btn{ padding-inline:11px; }
+  .bottom-link{ font-size:19px; }
+  .form-actions-row .btn{ flex:1 1 132px; justify-content:center; }
+}
+
 </style>
 </head>
 <body>
@@ -947,40 +1016,81 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
       <!-- ===== VISTA: FEED ===== -->
       <section class="view" id="view-feed">
-        <div class="section-head">
-          <h2>Últimos capítulos</h2>
-          <p>Lo nuevo de los cómics que sigues y de la comunidad</p>
-        </div>
-        <div class="chapter-feed" id="chapter-feed">
-          <!-- capítulos recientes -->
-        </div>
+        <div class="home-shell">
+          <section class="home-hero" aria-labelledby="home-hero-title">
+            <span class="home-kicker">InkToon · Historias verticales</span>
+            <h2 id="home-hero-title">Encuentra tu próxima obsesión.</h2>
+            <p>Explora historias por género, vuelve a tus lecturas y descubre series nuevas sin perderte entre pantallas.</p>
+            <div class="home-hero-actions">
+              <button class="btn btn-primary" id="btn-home-discover"><i class="fa-solid fa-compass"></i> Descubrir</button>
+              <button class="btn btn-outline" id="btn-home-library"><i class="fa-solid fa-bookmark"></i> Mi lista</button>
+            </div>
+          </section>
 
-        <div class="section-head section-head-tight">
-          <h2>Series populares</h2>
-        </div>
-        <div class="comic-grid" id="feed-comic-grid">
-          <!-- grid de portadas -->
+          <section class="discover-section hidden" id="home-continue-section">
+            <div class="discover-section-head">
+              <div><h3>Continuar leyendo</h3><p>Tu progreso se guarda en este dispositivo.</p></div>
+              <button class="discover-more" id="btn-home-library-continue">Ver mi lista</button>
+            </div>
+            <div class="series-rail" id="home-continue-rail"></div>
+          </section>
+
+          <section class="discover-section">
+            <div class="discover-section-head">
+              <div><h3>En tendencia</h3><p>Las series que más están gustando ahora.</p></div>
+              <button class="discover-more" id="btn-home-popular">Ver todo</button>
+            </div>
+            <div class="series-rail" id="feed-trending-rail"></div>
+          </section>
+
+          <section class="discover-section">
+            <div class="discover-section-head">
+              <div><h3>Novedades</h3><p>Episodios recién publicados por la comunidad.</p></div>
+              <button class="discover-more" id="btn-home-new">Ver todo</button>
+            </div>
+            <div class="new-episode-list" id="chapter-feed"></div>
+          </section>
+
+          <section class="discover-section">
+            <div class="discover-section-head">
+              <div><h3>Descubre por género</h3><p>Elige el tono de tu próxima historia.</p></div>
+            </div>
+            <div class="home-filter-tabs" id="home-genre-tabs">
+              <button class="active" data-home-genre="todos">Todo</button>
+              <button data-home-genre="acción">Acción</button>
+              <button data-home-genre="romance">Romance</button>
+              <button data-home-genre="fantasía">Fantasía</button>
+              <button data-home-genre="terror">Terror</button>
+              <button data-home-genre="comedia">Comedia</button>
+              <button data-home-genre="drama">Drama</button>
+            </div>
+            <div class="series-rail" id="feed-genre-rail"></div>
+          </section>
         </div>
       </section>
 
       <!-- ===== VISTA: EXPLORAR ===== -->
       <section class="view hidden" id="view-explore">
-        <div class="section-head">
-          <h2>Explorar</h2>
-          <p>Encuentra tu próxima obsesión</p>
-        </div>
-        <div class="genre-chips" id="genre-chips">
-          <button class="chip active" data-genre="todos">Todos</button>
-          <button class="chip" data-genre="acción">Acción</button>
-          <button class="chip" data-genre="romance">Romance</button>
-          <button class="chip" data-genre="fantasía">Fantasía</button>
-          <button class="chip" data-genre="terror">Terror</button>
-          <button class="chip" data-genre="comedia">Comedia</button>
-          <button class="chip" data-genre="drama">Drama</button>
-          <button class="chip" data-genre="sci-fi">Sci-Fi</button>
-        </div>
-        <div class="comic-grid comic-grid-explore" id="explore-comic-grid">
-          <!-- grid explorar -->
+        <div class="explore-layout">
+          <div class="section-head">
+            <h2>Descubrir historias</h2>
+            <p>Filtra por género y ordena el catálogo como prefieras.</p>
+          </div>
+          <div class="explore-sort-tabs" aria-label="Ordenar catálogo">
+            <button class="active" data-explore-sort="new">Recién añadidas</button>
+            <button data-explore-sort="popular">Más populares</button>
+          </div>
+          <div class="genre-chips" id="genre-chips">
+            <button class="chip active" data-genre="todos">Todos</button>
+            <button class="chip" data-genre="acción">Acción</button>
+            <button class="chip" data-genre="romance">Romance</button>
+            <button class="chip" data-genre="fantasía">Fantasía</button>
+            <button class="chip" data-genre="terror">Terror</button>
+            <button class="chip" data-genre="comedia">Comedia</button>
+            <button class="chip" data-genre="drama">Drama</button>
+            <button class="chip" data-genre="sci-fi">Sci-Fi</button>
+          </div>
+          <div class="comic-grid comic-grid-explore" id="explore-comic-grid"></div>
         </div>
       </section>
 
@@ -1014,8 +1124,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
       <!-- ===== VISTA: MI BIBLIOTECA ===== -->
       <section class="view hidden" id="view-library">
         <div class="section-head">
-          <h2>Mi biblioteca</h2>
-          <p>Cómics que guardaste para leer después</p>
+          <h2>Mi lista</h2>
+          <p>Lectura pendiente, progreso y series guardadas.</p>
+        </div>
+        <div class="library-continue hidden" id="library-continue-section">
+          <div class="discover-section-head"><div><h3>Continuar leyendo</h3><p>Retoma donde lo dejaste.</p></div></div>
+          <div class="series-rail" id="library-continue-rail"></div>
         </div>
         <div class="comic-grid" id="library-comic-grid">
           <!-- guardados -->
@@ -1111,7 +1225,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
               <span class="upload-progress-bar" id="comic-upload-progress-bar"></span>
             </p>
             <p class="form-error" id="comic-form-error"></p>
-            <button type="submit" class="btn btn-primary" id="comic-submit-btn">Publicar cómic</button>
+            <div class="form-actions-row">
+              <button type="button" class="btn btn-outline" id="btn-save-comic-draft"><i class="fa-regular fa-floppy-disk"></i> Guardar borrador</button>
+              <button type="submit" class="btn btn-primary" id="comic-submit-btn">Publicar cómic</button>
+            </div>
+            <p class="form-draft-note" id="comic-draft-status" aria-live="polite">La portada se elige nuevamente al restaurar un borrador.</p>
           </div>
         </form>
       </section>
@@ -1287,9 +1405,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   <!-- ---------- Nav inferior móvil ---------- -->
   <nav class="bottom-nav">
     <button class="bottom-link active" data-view="feed"><i class="fa-solid fa-house"></i></button>
-    <button class="bottom-link" data-view="explore"><i class="fa-solid fa-compass"></i></button>
+    <button class="bottom-link" data-view="search" aria-label="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
     <button class="bottom-link" data-view="upload"><i class="fa-regular fa-square-plus"></i></button>
-    <button class="bottom-link" data-view="activity"><i class="fa-regular fa-heart"></i></button>
+    <button class="bottom-link" data-view="library" aria-label="Mi lista"><i class="fa-regular fa-bookmark"></i></button>
     <button class="bottom-link" data-view="profile" id="bottom-profile-link">
       <img id="bottom-avatar" src="" alt="" />
     </button>
@@ -1543,6 +1661,7 @@ function goToView(name, opts = {}){
   if (name === "search") loadSearchScreen();
   if (name === "library") loadLibrary();
   if (name === "activity") loadActivity();
+  if (name === "upload") restoreComicDraft();
   if (name === "profile" && !opts.skipProfileReload) loadProfile();
 }
 
@@ -1797,37 +1916,118 @@ function applyProfileToChrome(){
 }
 
 /* ---------------------------------------------------------
-   FEED — capítulos recientes + series populares
+   INICIO — descubrimiento por carriles y continuidad
 --------------------------------------------------------- */
+let activeHomeGenre = "todos";
+let activeExploreSort = "new";
+
+function renderSeriesRail(container, docs, options = {}){
+  container.innerHTML = "";
+  if (!docs.length) {
+    container.innerHTML = `<div class="feed-empty">Aún no hay historias para mostrar.</div>`;
+    return;
+  }
+  docs.forEach(docSnap => {
+    const comic = docSnap.data();
+    const progress = options.progressByComic?.get(docSnap.id);
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = `series-card${progress ? " continue-card" : ""}`;
+    card.innerHTML = `
+      <img class="series-cover" src="${escapeHTML(comic.cover || "")}" alt="${escapeHTML(comic.title || "Cómic")}" loading="lazy" />
+      ${options.badge ? `<span class="series-card-badge">${escapeHTML(options.badge(comic))}</span>` : ""}
+      <span class="series-card-body">
+        <strong class="series-card-title">${escapeHTML(comic.title || "Sin título")}</strong>
+        <span class="series-card-meta">${progress ? `EP. ${escapeHTML(progress.chapterNumber || "")}` : escapeHTML(comic.genre || "Sin categoría")} · ${progress ? `${Math.round(progress.percent)}% leído` : `${comic.likesCount || 0} me gusta`}</span>
+        ${progress ? `<span class="continue-progress"><span style="width:${Math.max(0, Math.min(100, progress.percent))}%"></span></span>` : ""}
+      </span>
+    `;
+    card.addEventListener("click", () => openComicDetail(docSnap.id, progress?.chapterId ? { openChapterId: progress.chapterId } : {}));
+    container.appendChild(card);
+  });
+}
+
+function getLocalReadingProgress(){
+  const result = new Map();
+  if (!state.user?.uid) return result;
+  const prefix = `inktoon:reader-progress:${encodeURIComponent(state.user.uid)}:`;
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (!key?.startsWith(prefix)) continue;
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || "null");
+      const comicId = decodeURIComponent(key.slice(prefix.length));
+      if (saved?.chapterId && Number.isFinite(Number(saved.percent))) {
+        result.set(comicId, { chapterId: saved.chapterId, percent: Number(saved.percent), updatedAt: Number(saved.updatedAt) || 0 });
+      }
+    } catch (error) { /* ignorar progreso local corrupto */ }
+  }
+  return result;
+}
+
+async function loadContinueReading(targets){
+  const progressByComic = getLocalReadingProgress();
+  const entries = [...progressByComic.entries()].sort((a, b) => b[1].updatedAt - a[1].updatedAt).slice(0, 12);
+  if (!entries.length) {
+    targets.forEach(({ section, rail }) => { hide(section); rail.innerHTML = ""; });
+    return;
+  }
+  const docs = await Promise.all(entries.map(([comicId]) => getDoc(doc(db, "comics", comicId))));
+  const valid = docs.filter(item => item.exists());
+  const chapterNumbers = new Map();
+  await Promise.all(valid.map(async item => {
+    const progress = progressByComic.get(item.id);
+    if (!progress?.chapterId) return;
+    try {
+      const chapter = await getDoc(doc(db, "chapters", progress.chapterId));
+      if (chapter.exists()) progress.chapterNumber = chapter.data().number;
+    } catch (error) { /* la continuidad sigue funcionando sin número visible */ }
+  }));
+  targets.forEach(({ section, rail }) => {
+    if (!valid.length) { hide(section); rail.innerHTML = ""; return; }
+    show(section);
+    renderSeriesRail(rail, valid, { progressByComic });
+  });
+}
+
+async function loadHomeGenreRail(){
+  const rail = $("#feed-genre-rail");
+  rail.innerHTML = `<div class="feed-empty">Cargando historias…</div>`;
+  try {
+    const snap = await getDocs(query(collection(db, "comics"), orderBy("createdAt", "desc"), limit(50)));
+    const filtered = snap.docs.filter(item => activeHomeGenre === "todos" || item.data().genre === activeHomeGenre).slice(0, 14);
+    renderSeriesRail(rail, filtered);
+  } catch (error) {
+    rail.innerHTML = `<div class="feed-empty">No se pudo cargar esta selección.</div>`;
+  }
+}
+
 async function loadFeed(){
   const feedList = $("#chapter-feed");
-  const gridEl = $("#feed-comic-grid");
-  feedList.innerHTML = `<div class="feed-empty">Cargando capítulos…</div>`;
+  const trendingRail = $("#feed-trending-rail");
+  feedList.innerHTML = `<div class="feed-empty">Cargando novedades…</div>`;
+  trendingRail.innerHTML = `<div class="feed-empty">Cargando historias…</div>`;
+  void loadContinueReading([
+    { section: $("#home-continue-section"), rail: $("#home-continue-rail") }
+  ]);
 
   try {
-    const chaptersQuery = query(collection(db, "chapters"), orderBy("createdAt", "desc"), limit(12));
-    const snap = await getDocs(chaptersQuery);
-
-    if (snap.empty) {
-      feedList.innerHTML = `<div class="feed-empty">Todavía no hay capítulos publicados. ¡Sé el primero!</div>`;
+    const [chaptersSnap, trendingSnap] = await Promise.all([
+      getDocs(query(collection(db, "chapters"), orderBy("createdAt", "desc"), limit(8))),
+      getDocs(query(collection(db, "comics"), orderBy("likesCount", "desc"), limit(14)))
+    ]);
+    if (chaptersSnap.empty) {
+      feedList.innerHTML = `<div class="feed-empty">Las novedades aparecerán aquí cuando un creador publique un episodio.</div>`;
     } else {
       feedList.innerHTML = "";
-      snap.forEach(docSnap => {
-        const ch = docSnap.data();
-        feedList.appendChild(renderChapterCard(docSnap.id, ch));
-      });
+      chaptersSnap.forEach(docSnap => feedList.appendChild(renderChapterCard(docSnap.id, docSnap.data())));
     }
-  } catch (err) {
-    feedList.innerHTML = `<div class="feed-empty">No se pudieron cargar los capítulos.</div>`;
+    renderSeriesRail(trendingRail, trendingSnap.docs, { badge: () => "TOP" });
+  } catch (error) {
+    feedList.innerHTML = `<div class="feed-empty">No se pudieron cargar las novedades.</div>`;
+    trendingRail.innerHTML = `<div class="feed-empty">No se pudieron cargar las tendencias.</div>`;
   }
-
-  try {
-    const comicsQuery = query(collection(db, "comics"), orderBy("likesCount", "desc"), limit(9));
-    const snap = await getDocs(comicsQuery);
-    renderComicGrid(gridEl, snap.docs);
-  } catch (err) {
-    gridEl.innerHTML = "";
-  }
+  void loadHomeGenreRail();
 }
 
 function renderChapterCard(chapterId, ch){
@@ -1878,25 +2078,24 @@ function renderComicGrid(container, docs){
 }
 
 /* ---------------------------------------------------------
-   EXPLORAR — grid con filtro de género
+   DESCUBRIR — catálogo ordenable sin índices compuestos
 --------------------------------------------------------- */
 async function loadExplore(genre){
   const g = genre || state.activeGenreFilter || "todos";
   state.activeGenreFilter = g;
-  $$(".chip").forEach(c => c.classList.toggle("active", c.dataset.genre === g));
+  $$(".chip[data-genre]").forEach(c => c.classList.toggle("active", c.dataset.genre === g));
+  $$("[data-explore-sort]").forEach(button => button.classList.toggle("active", button.dataset.exploreSort === activeExploreSort));
 
   const gridEl = $("#explore-comic-grid");
   gridEl.innerHTML = `<div class="feed-empty" style="grid-column:1/-1;">Cargando…</div>`;
 
   try {
-    let comicsQuery;
-    if (g === "todos") {
-      comicsQuery = query(collection(db, "comics"), orderBy("createdAt", "desc"), limit(30));
-    } else {
-      comicsQuery = query(collection(db, "comics"), where("genre", "==", g), orderBy("createdAt", "desc"), limit(30));
+    const snap = await getDocs(query(collection(db, "comics"), orderBy("createdAt", "desc"), limit(80)));
+    const filtered = snap.docs.filter(item => g === "todos" || item.data().genre === g);
+    if (activeExploreSort === "popular") {
+      filtered.sort((a, b) => Number(b.data().likesCount || 0) - Number(a.data().likesCount || 0));
     }
-    const snap = await getDocs(comicsQuery);
-    renderComicGrid(gridEl, snap.docs);
+    renderComicGrid(gridEl, filtered);
   } catch (err) {
     gridEl.innerHTML = `<div class="feed-empty" style="grid-column:1/-1;">No se pudo cargar. Intenta de nuevo.</div>`;
   }
@@ -1905,6 +2104,24 @@ async function loadExplore(genre){
 $$(".chip[data-genre]").forEach(chip => {
   chip.addEventListener("click", () => loadExplore(chip.dataset.genre));
 });
+$$("[data-explore-sort]").forEach(button => {
+  button.addEventListener("click", () => {
+    activeExploreSort = button.dataset.exploreSort;
+    loadExplore();
+  });
+});
+$$("[data-home-genre]").forEach(button => {
+  button.addEventListener("click", () => {
+    activeHomeGenre = button.dataset.homeGenre;
+    $$("[data-home-genre]").forEach(tab => tab.classList.toggle("active", tab === button));
+    loadHomeGenreRail();
+  });
+});
+$("#btn-home-discover").addEventListener("click", () => goToView("explore"));
+$("#btn-home-library").addEventListener("click", () => goToView("library"));
+$("#btn-home-library-continue").addEventListener("click", () => goToView("library"));
+$("#btn-home-popular").addEventListener("click", () => { activeExploreSort = "popular"; goToView("explore"); });
+$("#btn-home-new").addEventListener("click", () => { activeExploreSort = "new"; goToView("explore"); });
 
 /* Búsqueda (desktop + móvil) */
 let searchDebounce;
@@ -1976,6 +2193,9 @@ async function loadLibrary(){
   const emptyEl = $("#library-empty");
   gridEl.innerHTML = "";
 
+  void loadContinueReading([
+    { section: $("#library-continue-section"), rail: $("#library-continue-rail") }
+  ]);
   const savedIds = state.profile?.savedComics || [];
   if (!savedIds.length) {
     hide(gridEl);
@@ -2048,6 +2268,62 @@ const coverUploader = $("#cover-uploader");
 const coverInput = $("#comic-cover-input");
 const coverPreviewImg = $("#cover-preview-img");
 const coverPreviewWrap = $("#cover-preview-wrap");
+let draftSaveTimer;
+
+function comicDraftKey(){
+  return `inktoon:comic-draft:${state.user?.uid || "guest"}`;
+}
+
+function readComicDraftForm(){
+  return {
+    title: $("#comic-title").value.trim(),
+    description: $("#comic-description").value.trim(),
+    genre: $("#comic-genre").value,
+    status: $("#comic-status").value,
+    tags: $("#comic-tags").value,
+    updatedAt: Date.now()
+  };
+}
+
+function saveComicDraft(showFeedback = false){
+  const draft = readComicDraftForm();
+  if (!draft.title && !draft.description && !draft.tags) return;
+  try {
+    localStorage.setItem(comicDraftKey(), JSON.stringify(draft));
+    if (showFeedback) {
+      $("#comic-draft-status").textContent = "Borrador guardado en este dispositivo. La portada se vuelve a elegir al continuar.";
+      toast("Borrador guardado", "success");
+    }
+  } catch (error) {
+    if (showFeedback) toast("No se pudo guardar el borrador en este dispositivo.", "error");
+  }
+}
+
+function restoreComicDraft(){
+  const formHasContent = $("#comic-title").value || $("#comic-description").value || $("#comic-tags").value;
+  if (formHasContent) return;
+  try {
+    const draft = JSON.parse(localStorage.getItem(comicDraftKey()) || "null");
+    if (!draft) return;
+    $("#comic-title").value = draft.title || "";
+    $("#comic-description").value = draft.description || "";
+    $("#comic-genre").value = draft.genre || "acción";
+    $("#comic-status").value = draft.status || "en curso";
+    $("#comic-tags").value = draft.tags || "";
+    $("#comic-draft-status").textContent = "Borrador restaurado. Elige la portada para continuar publicando.";
+  } catch (error) { /* ignorar datos locales inválidos */ }
+}
+
+function clearComicDraft(){
+  try { localStorage.removeItem(comicDraftKey()); } catch (error) { /* sin acción necesaria */ }
+  $("#comic-draft-status").textContent = "La portada se elige nuevamente al restaurar un borrador.";
+}
+
+$("#btn-save-comic-draft").addEventListener("click", () => saveComicDraft(true));
+$("#comic-form").addEventListener("input", () => {
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(() => saveComicDraft(false), 500);
+});
 
 coverUploader.addEventListener("click", () => coverInput.click());
 coverInput.addEventListener("change", () => {
@@ -2128,6 +2404,7 @@ $("#comic-form").addEventListener("submit", async (e) => {
     toast("¡Cómic publicado!", "success");
 
     e.target.reset();
+    clearComicDraft();
     state.pendingCoverFile = null;
     hide(coverPreviewImg);
     show(coverPreviewWrap);
