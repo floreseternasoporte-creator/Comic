@@ -4,7 +4,9 @@ import {
   createLocalProfile,
   friendlyAuthError,
   normalizeEmail,
+  normalizeReaderProgress,
   normalizeUsername,
+  readerProgressStorageKey,
   validateRegistrationInput,
 } from "../auth-helpers.mjs";
 
@@ -49,6 +51,16 @@ test("crea un perfil local utilizable aunque Firestore no esté disponible", () 
     likesCount: 0,
     savedComics: [],
   });
+});
+
+test("normaliza y valida el progreso de lectura antes de restaurarlo", () => {
+  const key = readerProgressStorageKey("user 1", "comic/1");
+  assert.equal(key, "inktoon:reader-progress:user%201:comic%2F1");
+  assert.deepEqual(
+    normalizeReaderProgress({ chapterId: "chapter-2", percent: 62.348 }, ["chapter-1", "chapter-2"]),
+    { chapterId: "chapter-2", percent: 62.35 },
+  );
+  assert.equal(normalizeReaderProgress({ chapterId: "removed", percent: 30 }, ["chapter-1"]), null);
 });
 
 test("convierte los errores técnicos de autenticación en mensajes comprensibles", () => {

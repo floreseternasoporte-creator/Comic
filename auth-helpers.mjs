@@ -44,6 +44,23 @@ export function createLocalProfile(user, preferredUsername) {
   };
 }
 
+export function readerProgressStorageKey(userId, comicId) {
+  return `inktoon:reader-progress:${encodeURIComponent(String(userId ?? ""))}:${encodeURIComponent(String(comicId ?? ""))}`;
+}
+
+export function normalizeReaderProgress(value, chapterIds) {
+  const chapterId = String(value?.chapterId ?? "");
+  const percent = Number(value?.percent);
+  if (!chapterId || !Array.isArray(chapterIds) || !chapterIds.includes(chapterId) || !Number.isFinite(percent)) {
+    return null;
+  }
+
+  return {
+    chapterId,
+    percent: Math.round(Math.min(100, Math.max(0, percent)) * 100) / 100,
+  };
+}
+
 export function friendlyAuthError(error) {
   const code = String(error?.code ?? "");
   const messages = {
